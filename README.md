@@ -1,155 +1,66 @@
-# 🏗️ Permit-To-Work (PTW) System - PT. KMI
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-![Laravel](https://img.shields.io/badge/Laravel-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)
-![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white)
-![PHP](https://img.shields.io/badge/PHP_8.5+-777BB4?style=for-the-badge&logo=php&logoColor=white)
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
 
-Sistem Informasi **Permit-To-Work (Izin Kerja)** modern dan terintegrasi yang dirancang khusus untuk memenuhi standar Keselamatan dan Kesehatan Kerja (K3) di lingkungan pabrik/industri berskala besar (studi kasus: PT. Kaltim Methanol Industri). 
+## About Laravel
 
-Aplikasi ini telah dimodernisasi menggunakan arsitektur **Laravel 11** dengan antarmuka pengguna berbasis **Tailwind CSS & Flowbite** yang mengusung desain korporat *Neo-Brutalist* yang bersih, responsif, dan mudah dipindai (*scannable*).
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
----
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-## ✨ Fitur Unggulan
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-* 🔐 **Role-Based Access Control (RBAC) Ketat**: 4 Ekosistem antarmuka terpisah untuk **Admin**, **Pekerja**, **Supervisor**, dan **Safety Officer**.
-* 🤖 **Auto-Assign Workflow**: Pekerja tidak perlu pusing memilih atasan. Sistem secara otomatis merutekan pengajuan permit ke Supervisor dan Safety Officer yang tepat berdasarkan *Department* pekerja.
-* 📊 **Dashboard Dinamis**: Statistik *real-time* dan pelacakan status permit (*Pending, Disetujui, Ditolak, Selesai*).
-* 📝 **Evaluasi K3 Terintegrasi**: Form khusus untuk Safety Officer memberikan penilaian tingkat risiko (Rendah/Sedang/Tinggi) dan rekomendasi APD.
-* 🖨️ **Export Laporan (PDF & Excel)**: Cetak laporan permit dengan format lanskap presisi (DomPDF) atau *streaming* Excel ribuan baris tanpa *memory leak* (OpenSpout).
-* 📥 **Import Data Massal**: Fitur eksklusif Admin untuk migrasi riwayat permit lama via template `.xlsx` dengan validasi otomatis.
+## Learning Laravel
 
----
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
 
-## 🛠️ Tech Stack Utama
+You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
 
-* **Backend:** Laravel 11 (PHP 8.5+)
-* **Frontend:** Blade Templating, Tailwind CSS, Flowbite (UI Components)
-* **Database:** MySQL
-* **Packages/Dependencies:**
-  * `barryvdh/laravel-dompdf` (Cetak Dokumen PDF)
-  * `openspout/openspout` (Generator & Reader Excel super cepat)
+If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
 
----
+## Laravel Sponsors
 
-## 🚀 Panduan Instalasi (Langkah demi Langkah)
+We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
 
-Ikuti instruksi di bawah ini untuk menjalankan sistem PTW ini di mesin lokal Anda.
+### Premium Partners
 
-### 1. Persyaratan Sistem (Prerequisites)
-Pastikan komputer Anda sudah terinstal perangkat lunak berikut:
-* **PHP** (Minimal versi 8.5 untuk kompatibilitas OpenSpout)
-* **Composer** (Dependency Manager PHP)
-* **Node.js & NPM** (Untuk kompilasi Tailwind CSS)
-* **MySQL** (Atau MariaDB via XAMPP/Laragon)
+- **[Vehikl](https://vehikl.com/)**
+- **[Tighten Co.](https://tighten.co)**
+- **[WebReinvent](https://webreinvent.com/)**
+- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
+- **[64 Robots](https://64robots.com)**
+- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
+- **[Cyber-Duck](https://cyber-duck.co.uk)**
+- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
+- **[Jump24](https://jump24.co.uk)**
+- **[Redberry](https://redberry.international/laravel/)**
+- **[Active Logic](https://activelogic.com)**
+- **[byte5](https://byte5.de)**
+- **[OP.GG](https://op.gg)**
 
-### 2. Kloning Repositori
-Buka terminal/CMD Anda dan kloning repositori ini:
-```bash
-git clone [https://github.com/username-anda/permit-to-work.git](https://github.com/username-anda/permit-to-work.git)
-cd permit-to-work
+## Contributing
 
-```
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-### 3. Konfigurasi Environment (`.env`)
+## Code of Conduct
 
-Salin file konfigurasi bawaan dan sesuaikan kredensial database Anda:
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
 
-```bash
-cp .env.example .env
+## Security Vulnerabilities
 
-```
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
-Buka file `.env` di *code editor* Anda, lalu sesuaikan bagian database berikut (pastikan Anda sudah membuat database kosong bernama `ptw_kmi` di MySQL):
+## License
 
-```env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=ptw_kmi
-DB_USERNAME=root
-DB_PASSWORD=
-
-```
-
-### 4. Instalasi Dependencies (Backend & Frontend)
-
-Jalankan perintah berikut untuk mengunduh seluruh *library* PHP dan Node.js:
-
-```bash
-composer install
-npm install
-
-```
-
-### 5. Generate Application Key & Storage Link
-
-```bash
-php artisan key:generate
-php artisan storage:link
-
-```
-
-### 6. Migrasi Database & Seeding Data Dummy
-
-> **⚠️ PENTING:** Perintah ini akan membangun tabel dari awal dan mengisi database dengan data *dummy* terstruktur (Departemen, Akun User, dan 19 Sampel Permit).
-
-```bash
-php artisan migrate:fresh --seed
-
-```
-
-### 7. Kompilasi Aset Visual (Tailwind & Flowbite)
-
-Agar tampilan CSS dapat di-render dengan sempurna, jalankan *build* aset:
-
-```bash
-npm run build
-
-```
-
-*(Gunakan `npm run dev` jika Anda ingin melakukan perubahan kode sambil melihat hasilnya secara live).*
-
-### 8. Jalankan Server Lokal
-
-```bash
-php artisan serve
-
-```
-
-Aplikasi sekarang dapat diakses melalui browser di alamat: **`http://localhost:8000`** 🎉
-
----
-
-## 🔑 Akun Pengujian (Seeder Defaults)
-
-Gunakan akun di bawah ini untuk mencoba alur kerja (*Walkthrough*) sistem. *(Catatan: Password default untuk seluruh akun hasil seeder adalah `password`)*.
-
-| Role | Username | Departemen | Deskripsi Akses |
-| --- | --- | --- | --- |
-| **Admin** | `ayuu03` | IT / Sistem Informasi | Akses manajemen user & Import laporan. |
-| **Pekerja** | `miraa01` | Maintenance Dept | Akses membuat permit baru. |
-| **Supervisor** | `pitaa02` | Produksi / Maintenance | Akses menyetujui (Approve/Reject) permit. |
-| **Safety Officer** | `dewii04` | K3 / Safety | Akses memberi evaluasi risiko K3. |
-
----
-
-## 📸 Cuplikan Layar (Screenshots)
-
-*(Ganti URL gambar di bawah ini dengan screenshot sistem Anda saat sudah berjalan)*
-
-| Dasbor Admin | Dasbor Pekerja |
-| --- | --- |
-|  |  |
-
-| Form Evaluasi (Safety Officer) | Cetak PDF Laporan |
-| --- | --- |
-|  |  |
-
----
-
-## 🛡️ Keamanan & Penanganan Kendala
-
-* **Memory Leak saat Ekspor:** Jika Anda memiliki puluhan ribu data riwayat permit, gunakan selalu format Ekspor Excel karena sistem menggunakan `OpenSpout` yang merender baris demi baris (*streaming*), bukan memuat semuanya di RAM.
-* **Tidak Bisa Login:** Pastikan Anda telah menjalankan perintah *seeder* (`php artisan migrate:fresh --seed`).
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
