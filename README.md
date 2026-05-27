@@ -1,66 +1,163 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Procurement System — PT. Kaltim Methanol Industri
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistem manajemen pengadaan barang terpadu untuk mengelola seluruh siklus hidup proses pengadaan mulai dari **Request Purchasing (RP)** → **Technical Evaluation (TE)** → **Re-Technical Evaluation (RE-TE)** → **Purchase Order (PO)**.
 
-## About Laravel
+## Tech Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+| Layer | Technology |
+|-------|-----------|
+| **Backend** | Laravel 12 (PHP 8.5) |
+| **Frontend (Legacy)** | Blade Templates + Alpine.js |
+| **Frontend (Report Module)** | Vue 3 + Inertia.js (Hybrid SPA) |
+| **Styling** | Tailwind CSS 3 — Modern Minimalist / Clean UI |
+| **Database** | SQLite (development) |
+| **Queue** | Laravel Queue (database driver) |
+| **WebSocket** | Laravel Reverb |
+| **Import/Export** | Maatwebsite Excel 4.x |
+| **PDF** | Barryvdh DomPDF |
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Arsitektur
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Aplikasi ini menggunakan **arsitektur hybrid**: modul legacy (RP, TE, RE-TE, PO) menggunakan Blade/Alpine.js, sementara **modul Report** dibangun sebagai SPA menggunakan Vue 3 + Inertia.js — keduanya hidup berdampingan dengan Vite dual-entry build.
 
-## Learning Laravel
+```
+resources/js/app.js          → Blade pages (legacy)
+resources/js/app-inertia.js  → Vue/Inertia pages (Report module)
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Fitur Unggulan — Modul Laporan
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### 1. Import Excel (Background Queue)
+- Upload file `.xlsx` / `.csv` via drag-and-drop interface
+- Proses import berjalan di background menggunakan **Laravel Queue**
+- Pembacaan file di-chunk per **1000 baris** untuk efisiensi memori
+- Logika **upsert** berdasarkan `kode_pengadaan` (mencegah duplikasi)
+- Validasi per-baris dengan pesan error bahasa Indonesia
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 2. Real-time Progress Tracking (WebSocket)
+- Menggunakan **Laravel Reverb** sebagai WebSocket server
+- **Laravel Echo** di frontend mendengarkan private channel `import.{id}`
+- Progress bar bergerak real-time setiap chunk selesai diproses
+- Notifikasi instan saat import selesai (sukses/gagal)
 
-## Laravel Sponsors
+### 3. Error Log Otomatis
+- Baris yang gagal validasi dikumpulkan via file JSONL
+- Setelah import selesai, otomatis di-generate file **Excel Error Log**
+- Setiap baris gagal dilengkapi kolom **"Alasan Gagal / Error"**
+- File dapat di-download langsung dari UI
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 4. Export Laporan
+- **Export Excel** — Data master lengkap dengan header berwarna dan auto-size
+- **Export PDF** — Format kertas **Folio/F4 Landscape** (`setPaper([0, 0, 612, 936], 'landscape')`) dengan tabel responsif
+- **Download Template** — Template import siap pakai dengan contoh dan panduan format
 
-### Premium Partners
+### 5. Auto-Status Computation
+Status procurement dihitung otomatis berdasarkan prioritas pengisian tanggal:
+```
+PO (tanggal_po terisi) > RE-TE (tanggal_rete terisi) > TE (tanggal_te terisi) > RP (default)
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+## Prasyarat
 
-## Contributing
+- PHP >= 8.2 dengan ekstensi: `zip`, `xml`, `mbstring`
+- Composer 2.x
+- Node.js >= 18 + npm
+- SQLite 3
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Instalasi
 
-## Code of Conduct
+```bash
+# 1. Clone repository
+git clone <repository-url>
+cd procurement-system
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# 2. Install dependencies
+composer install
+npm install
 
-## Security Vulnerabilities
+# 3. Konfigurasi environment
+cp .env.example .env
+php artisan key:generate
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# 4. Migrasi dan seed database
+php artisan migrate:fresh --seed
+
+# 5. Build assets
+npm run build
+```
+
+## Development
+
+Untuk menjalankan aplikasi di mode development, **4 service harus berjalan secara paralel**:
+
+```bash
+# Terminal 1 — Web Server
+php artisan serve
+
+# Terminal 2 — Vite Dev Server (HMR)
+npm run dev
+
+# Terminal 3 — Queue Worker (untuk proses import background)
+php artisan queue:listen
+
+# Terminal 4 — WebSocket Server (untuk real-time progress)
+php artisan reverb:start
+```
+
+Akses aplikasi di: `http://localhost:8000`
+
+### Akun Default
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `admin@outlook.com` | `adminkmi123` |
+
+## Struktur Modul Report
+
+```
+app/
+├── Events/
+│   ├── ImportProgressEvent.php     # Broadcast progress per-chunk
+│   └── ImportCompletedEvent.php    # Broadcast hasil akhir import
+├── Exports/
+│   ├── ProcurementExport.php       # Export data master ke Excel
+│   ├── ProcurementTemplateExport.php # Template import kosong
+│   └── FailedRowsExport.php        # Error log baris gagal
+├── Http/Controllers/
+│   └── ReportController.php        # 6 endpoints (index, import, template, excel, pdf, errorlog)
+├── Imports/
+│   └── ProcurementImport.php       # Queued chunk import + upsert + validation
+└── Models/
+    ├── Procurement.php             # Auto-status mutator via boot event
+    └── ImportLog.php               # Tracking progress import
+
+resources/js/
+├── app-inertia.js                  # Vue 3 + Inertia + Echo/Reverb setup
+├── Layouts/
+│   └── ReportLayout.vue            # Clean UI top-navbar layout
+└── Pages/Report/
+    └── Index.vue                   # Dashboard laporan (import/export/tabel/history)
+```
+
+## API Routes — Report Module
+
+| Method | URI | Description |
+|--------|-----|-------------|
+| `GET` | `/report` | Halaman dashboard report (Inertia) |
+| `POST` | `/report/import` | Upload & dispatch import job |
+| `GET` | `/report/template` | Download template Excel |
+| `GET` | `/report/export/excel` | Export data master ke Excel |
+| `GET` | `/report/export/pdf` | Export data master ke PDF (Folio Landscape) |
+| `GET` | `/report/error-log/{id}` | Download error log import |
+
+## Design System
+
+UI mengikuti filosofi **Modern Minimalist / Clean UI** sesuai `Design System Guide.md`:
+- Font: **Figtree** (sans-serif)
+- Palette: Monochromatic gray dengan aksen **Indigo** untuk focus state
+- Cards: `bg-white rounded-lg shadow-sm` pada kanvas `bg-gray-100`
+- Buttons: `bg-gray-800 hover:bg-gray-700` dengan `focus:ring-indigo-500`
+- Transitions: `transition ease-in-out duration-150` pada semua elemen interaktif
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Proprietary — PT. Kaltim Methanol Industri. All rights reserved.
