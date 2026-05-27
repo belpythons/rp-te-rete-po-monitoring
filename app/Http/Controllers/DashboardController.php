@@ -3,146 +3,177 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Permit;
-use App\Models\User;
-use App\Models\Department;
-use Illuminate\Support\Facades\Auth;
+use App\Models\RequestPurchasing;
+use App\Models\TechnicalEvaluation;
+use App\Models\ReTechnicalEvaluation;
+use App\Models\PurchaseOrder;
 
 class DashboardController extends Controller
 {
-    /**
-     * ═══════════════════════════════════════
-     * DASHBOARD ADMIN
-     * Melihat statistik global semua permit.
-     * ═══════════════════════════════════════
-     */
-    public function admin()
+    public function index()
     {
-        // Statistik global
-        $stats = [
-            'total'     => Permit::count(),
-            'pending'   => Permit::where('status', Permit::STATUS_PENDING)->count(),
-            'disetujui' => Permit::where('status', Permit::STATUS_DISETUJUI)->count(),
-            'ditolak'   => Permit::where('status', Permit::STATUS_DITOLAK)->count(),
-            'selesai'   => Permit::where('status', Permit::STATUS_SELESAI)->count(),
-        ];
+        // ======================
+        // TOTAL DATA (Untuk Angka di Card)
+        // ======================
+        $totalRP = RequestPurchasing::count();
+        $totalTE = TechnicalEvaluation::count(); dd($totalTE);
+        $totalRETE = ReTechnicalEvaluation::count();
+        $totalPO = PurchaseOrder::count();
 
-        // Chart data: jumlah per jenis pekerjaan
-        $chartData = [
-            'hot'        => Permit::where('jenis_pekerjaan', 'Hot Work')->count(),
-            'cold'       => Permit::where('jenis_pekerjaan', 'Cold Work')->count(),
-            'penggalian' => Permit::where('jenis_pekerjaan', 'Penggalian')->count(),
-            'listrik'    => Permit::where('jenis_pekerjaan', 'Listrik & Instrument')->count(),
-            'kendaraan'  => Permit::where('jenis_pekerjaan', 'Kendaraan & Alat Berat')->count(),
-            'confined'   => Permit::where('jenis_pekerjaan', 'Confined Space')->count(),
-            'kompresor'  => Permit::where('jenis_pekerjaan', 'Kompressor Oksigen')->count(),
-        ];
+        $semuaData = $totalRP + $totalTE + $totalRETE + $totalPO;
 
-        // Permit terbaru untuk tabel dashboard (paginated)
-        $permits = Permit::with('user', 'department')
-            ->latest()
-            ->paginate(10);
+        // ======================
+        // REQUEST PURCHASING
+        // ======================
+        $rp = RequestPurchasing::select('id', 'kode_rp as kode', 'nama_barang as barang', 'tanggal')
+            ->get()
+            ->map(function($item){
+                return [
+                    'id'       => $item->id,
+                    'kode'     => $item->kode,
+                    'barang'   => $item->barang,
+                    'status'   => 'Request Purchasing',
+                    'tanggal'  => $item->tanggal,
+                    'tipe'     => 'rp'
+                ];
+            });
 
-        return view('admin.dashboard', compact('stats', 'chartData', 'permits'));
+        // ======================
+        // TECHNICAL EVALUATION
+        // ======================
+        $te = TechnicalEvaluation::select('id', 'kode_te as kode', 'vendor as barang', 'tanggal')
+            ->get()
+            ->map(function($item){
+                return [
+                    'id'       => $item->id,
+                    'kode'     => $item->kode,
+                    'barang'   => $item->barang,
+                    'status'   => 'Technical Evaluation', // <--- DI SINI KUNCINYA!
+                    'tanggal'  => $item->tanggal,
+                    'tipe'     => 'te'
+                ];
+            });
+
+        // ======================
+        // RE-TECHNICAL EVALUATION
+        // ======================
+        $rete = ReTechnicalEvaluation::select('id', 'kode_rete as kode', 'vendor as barang', 'tanggal')
+            ->get()
+            ->map(function($item){
+                return [
+                    'id'       => $item->id,
+                    'kode'     => $item->kode,
+                    'barang'   => $item->barang,
+                    'status'   => 'Re-Technical Evaluation',
+                    'tanggal'  => $item->tanggal,
+                    'tipe'     => 'rete'
+                ];
+            });
+
+        // ======================
+        // PURCHASE ORDER
+        // ======================
+        $po = PurchaseOrder::select('id', 'kode_po as kode', 'vendor as barang', 'tanggal')
+            ->get()
+            ->map(function($item){
+                return [
+                    'id'       => $item->id,
+                    'kode'     => $item->kode,
+                    'barang'   => $item->barang,
+                    'status'   => 'Purchase Order',
+                    'tanggal'  => $item->tanggal,
+                    'tipe'     => 'po'
+                ];
+            });
+
+        // ======================
+        // GABUNGKAN SEMUA DATA
+        // ======================
+        $procurements = collect()
+            ->merge($rp)
+            ->merge($te)
+            ->merge($rete)
+            ->merge($po)
+            ->sortByDesc('tanggal')
+            ->values();
+
+        return view('dashboard', compact(
+            'procurements',
+            'semuaData',
+            'totalRP',
+            'totalTE',
+            'totalRETE',
+            'totalPO'
+        ));
     }
 
-    /**
-     * ═══════════════════════════════════════
-     * DASHBOARD PEKERJA
-     * Melihat statistik permit miliknya saja.
-     * ═══════════════════════════════════════
-     */
-    public function pekerja()
+    // ======================
+    // FUNGSI UPDATE DATA (DARI MODAL EDIT)
+    // ======================
+    public function update(Request $request, $id)
     {
-        $user = Auth::user();
+        $request->validate([
+            'kode' => 'required',
+            'barang' => 'required',
+            'status' => 'required',
+            'tanggal' => 'required|date',
+        ]);
 
-        $stats = [
-            'total'     => $user->permits()->count(),
-            'pending'   => $user->permits()->where('status', Permit::STATUS_PENDING)->count(),
-            'disetujui' => $user->permits()->where('status', Permit::STATUS_DISETUJUI)->count(),
-            'ditolak'   => $user->permits()->where('status', Permit::STATUS_DITOLAK)->count(),
-            'selesai'   => $user->permits()->where('status', Permit::STATUS_SELESAI)->count(),
-        ];
+        // Cek status baru untuk menentukan tabel mana yang harus diupdate
+        if ($request->status == 'Request Purchasing') {
+            $data = RequestPurchasing::findOrFail($id);
+            $data->update([
+                'kode_rp' => $request->kode,
+                'nama_barang' => $request->barang,
+                'tanggal' => $request->tanggal
+            ]);
+        } 
+        elseif ($request->status == 'Technical Evaluation') {
+            $data = TechnicalEvaluation::findOrFail($id);
+            $data->update([
+                'kode_te' => $request->kode,
+                'vendor' => $request->barang,
+                'tanggal' => $request->tanggal
+            ]);
+        } 
+        elseif ($request->status == 'Re-Technical Evaluation') {
+            $data = ReTechnicalEvaluation::findOrFail($id);
+            $data->update([
+                'kode_rete' => $request->kode,
+                'vendor' => $request->barang,
+                'tanggal' => $request->tanggal
+            ]);
+        } 
+        elseif ($request->status == 'Purchase Order') {
+            $data = PurchaseOrder::findOrFail($id);
+            $data->update([
+                'kode_po' => $request->kode,
+                'vendor' => $request->barang,
+                'tanggal' => $request->tanggal
+            ]);
+        }
 
-        // Permit terbaru milik pekerja ini
-        $permits = $user->permits()
-            ->with('supervisor', 'safetyOfficer')
-            ->latest()
-            ->paginate(10);
-
-        return view('pekerja.dashboard', compact('stats', 'permits'));
+        return redirect()->route('dashboard')->with('success', 'Data Procurement berhasil diperbarui!');
     }
 
-    /**
-     * ═══════════════════════════════════════
-     * DASHBOARD SUPERVISOR
-     * Melihat permit yang di-assign ke dirinya.
-     * ═══════════════════════════════════════
-     */
-    public function supervisor()
+    // ======================
+    // FUNGSI HAPUS DATA
+    // ======================
+    public function destroy($id)
     {
-        $user = Auth::user();
+        // Cari dan hapus data di salah satu tabel tempat ID tersebut berada
+        $deleted = RequestPurchasing::where('id', $id)->delete();
+        
+        if (!$deleted) {
+            $deleted = TechnicalEvaluation::where('id', $id)->delete();
+        }
+        if (!$deleted) {
+            $deleted = ReTechnicalEvaluation::where('id', $id)->delete();
+        }
+        if (!$deleted) {
+            $deleted = PurchaseOrder::where('id', $id)->delete();
+        }
 
-        $stats = [
-            'total'     => $user->supervisedPermits()->count(),
-            'pending'   => $user->supervisedPermits()->where('status', Permit::STATUS_PENDING)->count(),
-            'disetujui' => $user->supervisedPermits()->where('status', Permit::STATUS_DISETUJUI)->count(),
-            'ditolak'   => $user->supervisedPermits()->where('status', Permit::STATUS_DITOLAK)->count(),
-            'selesai'   => $user->supervisedPermits()->where('status', Permit::STATUS_SELESAI)->count(),
-        ];
-
-        $chartData = [
-            'hot'        => $user->supervisedPermits()->where('jenis_pekerjaan', 'Hot Work')->count(),
-            'cold'       => $user->supervisedPermits()->where('jenis_pekerjaan', 'Cold Work')->count(),
-            'penggalian' => $user->supervisedPermits()->where('jenis_pekerjaan', 'Penggalian')->count(),
-            'listrik'    => $user->supervisedPermits()->where('jenis_pekerjaan', 'Listrik & Instrument')->count(),
-            'kendaraan'  => $user->supervisedPermits()->where('jenis_pekerjaan', 'Kendaraan & Alat Berat')->count(),
-            'confined'   => $user->supervisedPermits()->where('jenis_pekerjaan', 'Confined Space')->count(),
-            'kompresor'  => $user->supervisedPermits()->where('jenis_pekerjaan', 'Kompressor Oksigen')->count(),
-        ];
-
-        // Permit yang perlu di-review oleh supervisor ini
-        $permits = $user->supervisedPermits()
-            ->with('user', 'department')
-            ->latest()
-            ->paginate(10);
-
-        return view('supervisor.dashboard', compact('stats', 'chartData', 'permits'));
-    }
-
-    /**
-     * ═══════════════════════════════════════
-     * DASHBOARD SAFETY OFFICER
-     * Melihat permit yang di-assign ke dirinya.
-     * ═══════════════════════════════════════
-     */
-    public function safetyOfficer()
-    {
-        $user = Auth::user();
-
-        $stats = [
-            'total'     => $user->reviewedPermits()->count(),
-            'pending'   => $user->reviewedPermits()->where('status', Permit::STATUS_PENDING)->count(),
-            'disetujui' => $user->reviewedPermits()->where('status', Permit::STATUS_DISETUJUI)->count(),
-            'ditolak'   => $user->reviewedPermits()->where('status', Permit::STATUS_DITOLAK)->count(),
-            'selesai'   => $user->reviewedPermits()->where('status', Permit::STATUS_SELESAI)->count(),
-        ];
-
-        $chartData = [
-            'hot'        => $user->reviewedPermits()->where('jenis_pekerjaan', 'Hot Work')->count(),
-            'cold'       => $user->reviewedPermits()->where('jenis_pekerjaan', 'Cold Work')->count(),
-            'penggalian' => $user->reviewedPermits()->where('jenis_pekerjaan', 'Penggalian')->count(),
-            'listrik'    => $user->reviewedPermits()->where('jenis_pekerjaan', 'Listrik & Instrument')->count(),
-            'kendaraan'  => $user->reviewedPermits()->where('jenis_pekerjaan', 'Kendaraan & Alat Berat')->count(),
-            'confined'   => $user->reviewedPermits()->where('jenis_pekerjaan', 'Confined Space')->count(),
-            'kompresor'  => $user->reviewedPermits()->where('jenis_pekerjaan', 'Kompressor Oksigen')->count(),
-        ];
-
-        $permits = $user->reviewedPermits()
-            ->with('user', 'department')
-            ->latest()
-            ->paginate(10);
-
-        return view('safety_officer.dashboard', compact('stats', 'chartData', 'permits'));
+        return redirect()->route('dashboard')->with('success', 'Data Procurement berhasil dihapus!');
     }
 }
