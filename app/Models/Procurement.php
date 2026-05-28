@@ -24,6 +24,11 @@ class Procurement extends Model
         'tanggal_in',
         'tanggal_out',
         'status',
+        'quantity',
+        'departemen',
+        'keterangan',
+        'hasil_evaluasi',
+        'catatan',
     ];
 
     /**
@@ -39,18 +44,67 @@ class Procurement extends Model
 
     /**
      * Boot method — register model event for auto-computing status.
-     *
-     * Priority logic (highest wins):
-     *   tanggal_po filled   → "PO"
-     *   tanggal_rete filled → "RE-TE"
-     *   tanggal_te filled   → "TE"
-     *   none filled         → "RP"
      */
     protected static function booted(): void
     {
         static::saving(function (Procurement $procurement) {
-            $procurement->status = $procurement->computeStatus();
+            if ($procurement->isDirty('status')) {
+                $procurement->syncDatesWithStatus($procurement->status);
+            } else {
+                $procurement->status = $procurement->computeStatus();
+            }
         });
+    }
+
+    /**
+     * Synchronize date fields automatically based on target status.
+     */
+    public function syncDatesWithStatus(string $status): void
+    {
+        $now = now();
+
+        if ($status === self::STATUS_RP) {
+            $this->tanggal_te = null;
+            $this->tanggal_rete = null;
+            $this->tanggal_po = null;
+            $this->tanggal_out = null;
+            if (is_null($this->tanggal_in)) {
+                $this->tanggal_in = $now;
+            }
+        } elseif ($status === self::STATUS_TE) {
+            if (is_null($this->tanggal_in)) {
+                $this->tanggal_in = $now;
+            }
+            if (is_null($this->tanggal_te)) {
+                $this->tanggal_te = $now;
+            }
+            $this->tanggal_rete = null;
+            $this->tanggal_po = null;
+        } elseif ($status === self::STATUS_RETE) {
+            if (is_null($this->tanggal_in)) {
+                $this->tanggal_in = $now;
+            }
+            if (is_null($this->tanggal_te)) {
+                $this->tanggal_te = $now;
+            }
+            if (is_null($this->tanggal_rete)) {
+                $this->tanggal_rete = $now;
+            }
+            $this->tanggal_po = null;
+        } elseif ($status === self::STATUS_PO) {
+            if (is_null($this->tanggal_in)) {
+                $this->tanggal_in = $now;
+            }
+            if (is_null($this->tanggal_te)) {
+                $this->tanggal_te = $now;
+            }
+            if (is_null($this->tanggal_rete)) {
+                $this->tanggal_rete = $now;
+            }
+            if (is_null($this->tanggal_po)) {
+                $this->tanggal_po = $now;
+            }
+        }
     }
 
     /**
