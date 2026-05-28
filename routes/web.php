@@ -25,55 +25,7 @@ Route::get('/', function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth')->get('/dashboard', function () {
-
-    $status = request('status');
-
-    /*
-    |----------------------------------------
-    | TOTAL DASHBOARD (REAL FROM PROCUREMENT)
-    |----------------------------------------
-    */
-    $totalRP = Procurement::where('status', Procurement::STATUS_RP)->count();
-    $totalTE = Procurement::where('status', Procurement::STATUS_TE)->count();
-    $totalRETE = Procurement::where('status', Procurement::STATUS_RETE)->count();
-    $totalPO = Procurement::where('status', Procurement::STATUS_PO)->count();
-
-    /*
-    |----------------------------------------
-    | DATA PROCUREMENT (REAL SYSTEM 1 TABLE)
-    |----------------------------------------
-    */
-    $procurements = Procurement::when($status, function ($query) use ($status) {
-            return $query->where('status', $status);
-        })
-        ->orderBy('id', 'desc')
-        ->get()
-        ->map(function ($item) {
-            return [
-                'id' => $item->id,
-                'kode_pengadaan' => $item->kode_pengadaan,
-                'nama_barang' => $item->nama_barang,
-                'vendor' => $item->vendor,
-                'status' => $item->status,
-                'tanggal' => $item->tanggal?->format('Y-m-d'),
-            ];
-        });
-
-    /*
-    |----------------------------------------
-    | RETURN VIEW (Pastikan melempar variabel total dengan benar)
-    |----------------------------------------
-    */
-    return view('dashboard', compact(
-        'totalRP',
-        'totalTE',
-        'totalRETE',
-        'totalPO',
-        'procurements'
-    ));
-
-})->name('dashboard');
+Route::middleware('auth')->get('/dashboard', [ProcurementController::class, 'index'])->name('dashboard');
 
 /*
 |--------------------------------------------------------------------------
@@ -82,9 +34,6 @@ Route::middleware('auth')->get('/dashboard', function () {
 */
 
 Route::middleware('auth')->group(function () {
-
-    Route::get('/procurement', [ProcurementController::class, 'index'])
-        ->name('procurement.index');
 
     Route::get('/procurement/create', [ProcurementController::class, 'create'])
         ->name('procurement.create');
@@ -104,6 +53,9 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/procurement/approve-phase/{id}', [ProcurementController::class, 'approvePhase'])
         ->name('procurement.approve_phase');
+
+    Route::post('/procurement/reject-phase/{id}', [ProcurementController::class, 'rejectPhase'])
+        ->name('procurement.reject_phase');
 
 });
 
