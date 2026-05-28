@@ -27,6 +27,11 @@ class ProcurementController extends Controller
             });
         }
 
+        // STATUS FILTER
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
         $procurements = $query
             ->orderBy('id', 'desc')
             ->get();
@@ -67,13 +72,22 @@ class ProcurementController extends Controller
             'kode_pengadaan' => 'required|unique:procurements,kode_pengadaan',
             'nama_barang'    => 'required',
             'vendor'         => 'required',
+            'tanggal_in'     => 'nullable|date',
+            'tanggal_out'    => 'nullable|date',
+            'tanggal_te'     => 'nullable|date',
+            'tanggal_rete'   => 'nullable|date',
+            'tanggal_po'     => 'nullable|date',
         ]);
 
         Procurement::create([
             'kode_pengadaan' => $request->kode_pengadaan,
             'nama_barang'    => $request->nama_barang,
             'vendor'         => $request->vendor,
-            'tanggal_in'     => now(),
+            'tanggal_in'     => $request->tanggal_in,
+            'tanggal_out'    => $request->tanggal_out,
+            'tanggal_te'     => $request->tanggal_te,
+            'tanggal_rete'   => $request->tanggal_rete,
+            'tanggal_po'     => $request->tanggal_po,
         ]);
 
         return redirect('/dashboard')
@@ -147,7 +161,31 @@ class ProcurementController extends Controller
 
         $procurement->save();
 
-        return redirect('/dashboard')
-            ->with('success', 'Fase berhasil di-approve');
+        return redirect()->route('dashboard', ['status' => $procurement->status])
+            ->with('success', 'Berhasil di-approve!');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | REJECT PHASE (AUTOMATION)
+    |--------------------------------------------------------------------------
+    |*/
+    public function rejectPhase(Request $request, $id)
+    {
+        $procurement = Procurement::findOrFail($id);
+        $currentStatus = $procurement->status;
+
+        if ($currentStatus === Procurement::STATUS_TE) {
+            $procurement->tanggal_te = null;
+        } elseif ($currentStatus === Procurement::STATUS_RETE) {
+            $procurement->tanggal_rete = null;
+        } elseif ($currentStatus === Procurement::STATUS_PO) {
+            $procurement->tanggal_po = null;
+        }
+
+        $procurement->save();
+
+        return redirect()->route('dashboard', ['status' => $procurement->status])
+            ->with('success', 'Data dikembalikan!');
     }
 }
