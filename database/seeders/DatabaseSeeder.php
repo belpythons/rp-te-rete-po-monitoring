@@ -9,7 +9,9 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
         User::truncate();
+        \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
 
         User::create([
             'name' => 'Admin KMI',
