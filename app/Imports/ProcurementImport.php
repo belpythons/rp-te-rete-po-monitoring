@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 use Throwable;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class ProcurementImport implements
     ToModel,
@@ -55,6 +56,19 @@ class ProcurementImport implements
     }
 
     /**
+     * Intercept raw Excel numerical dates before validation rules are applied.
+     */
+    public function prepareForValidation(array $data, int $index): array
+    {
+        foreach (['tanggal_te', 'tanggal_rete', 'tanggal_po'] as $field) {
+            if (isset($data[$field]) && is_numeric($data[$field])) {
+                $data[$field] = Date::excelToDateTimeObject($data[$field])->format('Y-m-d');
+            }
+        }
+        return $data;
+    }
+
+    /**
      * Map each Excel row to a Procurement model.
      * Status is computed manually because upsert bypasses Eloquent events.
      */
@@ -62,13 +76,33 @@ class ProcurementImport implements
     {
         $this->chunkRowCount++;
 
+        $tanggal_te = $row['tanggal_te'] ?: null;
+        if (is_numeric($tanggal_te)) {
+            $tanggal_te = Date::excelToDateTimeObject($tanggal_te)->format('Y-m-d');
+        }
+
+        $tanggal_rete = $row['tanggal_rete'] ?: null;
+        if (is_numeric($tanggal_rete)) {
+            $tanggal_rete = Date::excelToDateTimeObject($tanggal_rete)->format('Y-m-d');
+        }
+
+        $tanggal_po = $row['tanggal_po'] ?: null;
+        if (is_numeric($tanggal_po)) {
+            $tanggal_po = Date::excelToDateTimeObject($tanggal_po)->format('Y-m-d');
+        }
+
         $procurement = new Procurement([
             'kode_pengadaan' => $row['kode_pengadaan'],
             'nama_barang'    => $row['nama_barang'],
             'vendor'         => $row['vendor'],
-            'tanggal_te'     => $row['tanggal_te'] ?: null,
-            'tanggal_rete'   => $row['tanggal_rete'] ?: null,
-            'tanggal_po'     => $row['tanggal_po'] ?: null,
+            'tanggal_te'     => $tanggal_te,
+            'tanggal_rete'   => $tanggal_rete,
+            'tanggal_po'     => $tanggal_po,
+            'quantity'       => $row['quantity'] ?? null,
+            'departemen'     => $row['departemen'] ?? null,
+            'keterangan'     => $row['keterangan'] ?? null,
+            'hasil_evaluasi' => $row['hasil_evaluasi'] ?? null,
+            'catatan'        => $row['catatan'] ?? null,
         ]);
 
         // Manually compute status since upsert bypasses model boot events
@@ -113,6 +147,11 @@ class ProcurementImport implements
             'tanggal_te'     => ['nullable', 'date_format:Y-m-d'],
             'tanggal_rete'   => ['nullable', 'date_format:Y-m-d'],
             'tanggal_po'     => ['nullable', 'date_format:Y-m-d'],
+            'quantity'       => ['nullable', 'string', 'max:100'],
+            'departemen'     => ['nullable', 'string', 'max:255'],
+            'keterangan'     => ['nullable', 'string'],
+            'hasil_evaluasi' => ['nullable', 'string'],
+            'catatan'        => ['nullable', 'string'],
         ];
     }
 

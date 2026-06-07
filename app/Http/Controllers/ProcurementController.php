@@ -67,13 +67,13 @@ class ProcurementController extends Controller
     |--------------------------------------------------------------------------
     | STORE
     |--------------------------------------------------------------------------
-    */
+    |*/
     public function store(Request $request)
     {
         $rules = [
             'kode_pengadaan' => 'required|unique:procurements,kode_pengadaan',
             'status'         => 'required|in:RP,TE,RE-TE,PO',
-            'nama_barang'    => 'nullable|string|max:255',
+            'nama_barang'    => 'required|string|max:255',
             'vendor'         => 'nullable|string|max:255',
             'quantity'       => 'nullable|string|max:100',
             'departemen'     => 'nullable|string|max:255',
@@ -85,29 +85,26 @@ class ProcurementController extends Controller
 
         // Specific conditional validations per phase
         if ($request->status === 'RP') {
-            $rules['nama_barang'] = 'required|string|max:255';
             $rules['quantity']    = 'required|string|max:100';
             $rules['departemen']  = 'required|string|max:255';
         } elseif ($request->status === 'TE') {
             $rules['vendor']         = 'required|string|max:255';
             $rules['hasil_evaluasi'] = 'required|string';
         } elseif ($request->status === 'RE-TE') {
-            $rules['nama_barang'] = 'required|string|max:255';
-            $rules['vendor']      = 'required|string|max:255';
-            $rules['catatan']     = 'required|string';
+            $rules['vendor']  = 'required|string|max:255';
+            $rules['catatan'] = 'required|string';
         } elseif ($request->status === 'PO') {
-            $rules['nama_barang'] = 'required|string|max:255';
-            $rules['vendor']      = 'required|string|max:255';
-            $rules['quantity']    = 'required|string|max:100';
-            $rules['departemen']  = 'required|string|max:255';
+            $rules['vendor']     = 'required|string|max:255';
+            $rules['quantity']   = 'required|string|max:100';
+            $rules['departemen'] = 'required|string|max:255';
         }
 
         $request->validate($rules);
 
         $procurement = new Procurement();
         $procurement->kode_pengadaan = $request->kode_pengadaan;
-        $procurement->nama_barang    = $request->nama_barang ?? 'Barang';
-        $procurement->vendor         = $request->vendor ?? 'Vendor Default';
+        $procurement->nama_barang    = $request->nama_barang;
+        $procurement->vendor         = $request->vendor;
         $procurement->quantity       = $request->quantity;
         $procurement->departemen     = $request->departemen;
         $procurement->keterangan     = $request->keterangan;
@@ -115,7 +112,6 @@ class ProcurementController extends Controller
         $procurement->catatan        = $request->catatan;
         $procurement->status         = $request->status;
 
-        $procurement->syncDatesWithStatus($request->status);
         if ($request->filled('tanggal')) {
             $date = $request->tanggal;
             if ($request->status === Procurement::STATUS_RP) {
@@ -139,7 +135,7 @@ class ProcurementController extends Controller
     |--------------------------------------------------------------------------
     | UPDATE
     |--------------------------------------------------------------------------
-    */
+    |*/
     public function update(Request $request, $id)
     {
         $procurement = Procurement::findOrFail($id);
@@ -147,7 +143,7 @@ class ProcurementController extends Controller
         $rules = [
             'kode_pengadaan' => 'required|unique:procurements,kode_pengadaan,' . $id,
             'status'         => 'required|in:RP,TE,RE-TE,PO',
-            'nama_barang'    => 'nullable|string|max:255',
+            'nama_barang'    => 'required|string|max:255',
             'vendor'         => 'nullable|string|max:255',
             'quantity'       => 'nullable|string|max:100',
             'departemen'     => 'nullable|string|max:255',
@@ -159,21 +155,18 @@ class ProcurementController extends Controller
 
         // Specific conditional validations per phase
         if ($request->status === 'RP') {
-            $rules['nama_barang'] = 'required|string|max:255';
             $rules['quantity']    = 'required|string|max:100';
             $rules['departemen']  = 'required|string|max:255';
         } elseif ($request->status === 'TE') {
             $rules['vendor']         = 'required|string|max:255';
             $rules['hasil_evaluasi'] = 'required|string';
         } elseif ($request->status === 'RE-TE') {
-            $rules['nama_barang'] = 'required|string|max:255';
-            $rules['vendor']      = 'required|string|max:255';
-            $rules['catatan']     = 'required|string';
+            $rules['vendor']  = 'required|string|max:255';
+            $rules['catatan'] = 'required|string';
         } elseif ($request->status === 'PO') {
-            $rules['nama_barang'] = 'required|string|max:255';
-            $rules['vendor']      = 'required|string|max:255';
-            $rules['quantity']    = 'required|string|max:100';
-            $rules['departemen']  = 'required|string|max:255';
+            $rules['vendor']     = 'required|string|max:255';
+            $rules['quantity']   = 'required|string|max:100';
+            $rules['departemen'] = 'required|string|max:255';
         }
 
         $request->validate($rules);
@@ -203,12 +196,7 @@ class ProcurementController extends Controller
             $procurement->catatan = $request->catatan;
         }
 
-        $statusChanged = $procurement->status !== $request->status;
         $procurement->status = $request->status;
-
-        if ($statusChanged) {
-            $procurement->syncDatesWithStatus($request->status);
-        }
 
         if ($request->filled('tanggal')) {
             $date = $request->tanggal;
@@ -233,7 +221,7 @@ class ProcurementController extends Controller
     |--------------------------------------------------------------------------
     | DELETE
     |--------------------------------------------------------------------------
-    */
+    |*/
     public function destroy($id)
     {
         $procurement = Procurement::findOrFail($id);
@@ -247,14 +235,11 @@ class ProcurementController extends Controller
     |--------------------------------------------------------------------------
     | APPROVE PHASE (AUTOMATION)
     |--------------------------------------------------------------------------
-    */
+    |*/
     public function approvePhase(Request $request, $id)
     {
         $procurement = Procurement::findOrFail($id);
         $currentStatus = $procurement->status;
-
-        // Auto set tanggal_out
-        $procurement->tanggal_out = now();
 
         if ($currentStatus === Procurement::STATUS_RP) {
             $procurement->tanggal_te = now();
@@ -264,9 +249,11 @@ class ProcurementController extends Controller
                 $procurement->tanggal_rete = now();
             } else {
                 $procurement->tanggal_po = now();
+                $procurement->tanggal_out = now();
             }
         } elseif ($currentStatus === Procurement::STATUS_RETE) {
             $procurement->tanggal_po = now();
+            $procurement->tanggal_out = now();
         }
 
         $procurement->save();
