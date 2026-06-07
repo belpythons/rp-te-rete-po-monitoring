@@ -18,7 +18,7 @@ return new class extends Migration
             $table->id();
             $table->string('kode_pengadaan')->unique();
             $table->string('nama_barang');
-            $table->string('vendor');
+            $table->string('vendor')->nullable();
 
             // Phase tracking dates (nullable — filled as procurement progresses)
             $table->date('tanggal_te')->nullable();
