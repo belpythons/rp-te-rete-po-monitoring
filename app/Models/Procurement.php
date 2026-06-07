@@ -98,9 +98,6 @@ class Procurement extends Model
             if (is_null($this->tanggal_te)) {
                 $this->tanggal_te = $now;
             }
-            if (is_null($this->tanggal_rete)) {
-                $this->tanggal_rete = $now;
-            }
             if (is_null($this->tanggal_po)) {
                 $this->tanggal_po = $now;
             }

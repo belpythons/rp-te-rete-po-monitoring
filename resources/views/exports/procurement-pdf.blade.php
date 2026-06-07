@@ -4,130 +4,160 @@
     <meta charset="utf-8">
     <title>Laporan Procurement</title>
     <style>
+        @page {
+            margin: 20px;
+        }
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             font-size: 10px;
-            color: #222;
+            color: #111;
+            background-color: #ffffff;
+            padding: 10px;
         }
-
         .header {
             text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 3px solid #2F3F52;
-            padding-bottom: 10px;
+            margin-bottom: 25px;
+            border-bottom: 4px solid #000000;
+            padding-bottom: 12px;
         }
-
         .header h1 {
-            font-size: 18px;
-            color: #2F3F52;
-            margin-bottom: 4px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #000000;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-
         .header p {
             font-size: 10px;
-            color: #666;
+            color: #444;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
         }
-
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            table-layout: fixed;
+            margin-top: 15px;
         }
-
-        thead th {
-            background-color: #2F3F52;
+        th {
+            background-color: #000000;
             color: #ffffff;
-            padding: 8px 6px;
-            text-align: center;
-            font-size: 10px;
             font-weight: bold;
-            border: 1px solid #1a2a3a;
-        }
-
-        tbody td {
-            padding: 6px;
+            text-transform: uppercase;
             text-align: center;
-            border: 1px solid #ccc;
+            padding: 8px 4px;
             font-size: 9px;
+            border: 2px solid #000000;
+            word-wrap: break-word;
         }
-
-        tbody tr:nth-child(even) {
-            background-color: #f5f5f5;
+        td {
+            padding: 8px 4px;
+            border: 2px solid #000000;
+            font-size: 9px;
+            text-align: center;
+            word-wrap: break-word;
         }
-
-        .status-rp   { background-color: #DBEAFE; color: #1E40AF; font-weight: bold; padding: 3px 8px; border-radius: 4px; }
-        .status-te   { background-color: #D1FAE5; color: #065F46; font-weight: bold; padding: 3px 8px; border-radius: 4px; }
-        .status-rete { background-color: #FEF3C7; color: #92400E; font-weight: bold; padding: 3px 8px; border-radius: 4px; }
-        .status-po   { background-color: #FCE7F3; color: #9D174D; font-weight: bold; padding: 3px 8px; border-radius: 4px; }
-
+        .text-left {
+            text-align: left;
+        }
+        .font-mono {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+        }
+        .status-badge {
+            display: inline-block;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 2px 4px;
+            border: 1px solid #000;
+        }
+        .status-rp {
+            background-color: #FACC15;
+            color: #000;
+        }
+        .status-te {
+            background-color: #22D3EE;
+            color: #000;
+        }
+        .status-rete {
+            background-color: #FF80FF;
+            color: #000;
+        }
+        .status-po {
+            background-color: #4ADE80;
+            color: #000;
+        }
         .footer {
-            margin-top: 20px;
+            margin-top: 30px;
             text-align: right;
             font-size: 8px;
-            color: #999;
+            font-family: 'Courier New', Courier, monospace;
+            color: #555;
+            border-top: 1px solid #ccc;
+            padding-top: 8px;
         }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>LAPORAN DATA PROCUREMENT</h1>
-        <p>PT. KMI — Procurement System</p>
-        <p>Dicetak pada: {{ $generatedAt }}</p>
+        <h1>LAPORAN MONITORING PENGADAAN (RP-TE-RETE-PO)</h1>
+        <p>PT. KAWASAN INDUSTRI BONTANG — DEPARTEMEN PENGADAAN</p>
+        <p>Tanggal Cetak: {{ $generatedAt }}</p>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th style="width: 5%;">No</th>
-                <th style="width: 14%;">Kode Pengadaan</th>
-                <th style="width: 20%;">Nama Barang</th>
-                <th style="width: 18%;">Vendor</th>
-                <th style="width: 11%;">Tanggal TE</th>
-                <th style="width: 11%;">Tanggal RE-TE</th>
-                <th style="width: 11%;">Tanggal PO</th>
-                <th style="width: 10%;">Status</th>
+                <th style="width: 5%; word-wrap: break-word;">No</th>
+                <th style="width: 15%; word-wrap: break-word;">Kode Pengadaan</th>
+                <th style="width: 25%; word-wrap: break-word;">Deskripsi / Nama Barang</th>
+                <th style="width: 18%; word-wrap: break-word;">Vendor</th>
+                <th style="width: 10%; word-wrap: break-word;">Tgl IN</th>
+                <th style="width: 10%; word-wrap: break-word;">Tgl TE</th>
+                <th style="width: 10%; word-wrap: break-word;">Tgl RE-TE</th>
+                <th style="width: 7%; word-wrap: break-word;">Status</th>
             </tr>
         </thead>
         <tbody>
             @forelse($procurements as $index => $item)
                 <tr>
-                    <td>{{ $index + 1 }}</td>
-                    <td>{{ $item->kode_pengadaan }}</td>
-                    <td style="text-align: left;">{{ $item->nama_barang }}</td>
-                    <td style="text-align: left;">{{ $item->vendor }}</td>
-                    <td>{{ $item->tanggal_te?->format('Y-m-d') ?? '-' }}</td>
-                    <td>{{ $item->tanggal_rete?->format('Y-m-d') ?? '-' }}</td>
-                    <td>{{ $item->tanggal_po?->format('Y-m-d') ?? '-' }}</td>
-                    <td>
+                    <td style="width: 5%; word-wrap: break-word;" class="font-mono">{{ $index + 1 }}</td>
+                    <td style="width: 15%; word-wrap: break-word;" class="font-mono">{{ $item->kode_pengadaan }}</td>
+                    <td style="width: 25%; word-wrap: break-word;" class="text-left">{{ $item->nama_barang }}</td>
+                    <td style="width: 18%; word-wrap: break-word;" class="text-left">{{ $item->vendor ?? '—' }}</td>
+                    <td style="width: 10%; word-wrap: break-word;" class="font-mono">{{ $item->tanggal_in?->format('Y-m-d') ?? '—' }}</td>
+                    <td style="width: 10%; word-wrap: break-word;" class="font-mono">{{ $item->tanggal_te?->format('Y-m-d') ?? '—' }}</td>
+                    <td style="width: 10%; word-wrap: break-word;" class="font-mono">{{ $item->tanggal_rete?->format('Y-m-d') ?? '—' }}</td>
+                    <td style="width: 7%; word-wrap: break-word;">
                         @switch($item->status)
                             @case('RP')
-                                <span class="status-rp">RP</span>
+                                <span class="status-badge status-rp">RP</span>
                                 @break
                             @case('TE')
-                                <span class="status-te">TE</span>
+                                <span class="status-badge status-te">TE</span>
                                 @break
                             @case('RE-TE')
-                                <span class="status-rete">RE-TE</span>
+                                <span class="status-badge status-rete">RE-TE</span>
                                 @break
                             @case('PO')
-                                <span class="status-po">PO</span>
+                                <span class="status-badge status-po">PO</span>
                                 @break
                             @default
-                                {{ $item->status }}
+                                <span class="status-badge" style="background-color: #eee;">{{ $item->status }}</span>
                         @endswitch
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8" style="text-align: center; color: #999; padding: 20px;">
-                        Tidak ada data procurement.
+                    <td colspan="8" style="text-align: center; color: #555; padding: 25px; font-family: 'Courier New', Courier, monospace;">
+                        TIDAK ADA DATA PROCUREMENT.
                     </td>
                 </tr>
             @endforelse
@@ -135,7 +165,7 @@
     </table>
 
     <div class="footer">
-        Procurement System — Generated {{ $generatedAt }}
+        PT. KMI Procurement System — Dokumen ini digenerate secara otomatis pada {{ $generatedAt }}
     </div>
 
 </body>
