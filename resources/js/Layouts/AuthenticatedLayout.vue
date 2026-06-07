@@ -13,19 +13,33 @@ const page = usePage();
 const user = computed(() => page.props.auth?.user);
 
 const navItems = computed(() => [
-    { href: '/dashboard', label: 'Dashboard', icon: 'bi bi-speedometer2', active: page.url === '/dashboard' },
-    { href: '/dashboard?status=RP', label: 'Request Purchasing', icon: 'bi bi-file-earmark-text', active: page.url === '/dashboard?status=RP' },
-    { href: '/dashboard?status=TE', label: 'Technical Evaluation', icon: 'bi bi-clipboard-check', active: page.url === '/dashboard?status=TE' },
-    { href: '/dashboard?status=RE-TE', label: 'Re-Technical Evaluation', icon: 'bi bi-arrow-repeat', active: page.url === '/dashboard?status=RE-TE' },
-    { href: '/dashboard?status=PO', label: 'Purchase Order', icon: 'bi bi-bag-check', active: page.url === '/dashboard?status=PO' },
-    { href: '/report', label: 'Laporan', icon: 'bi bi-bar-chart-fill', active: page.url.startsWith('/report') || page.url.startsWith('/laporan') },
+    { href: '/dashboard', label: 'Dashboard', icon: 'bi bi-speedometer2' },
+    { href: '/dashboard?status=RP', label: 'Request Purchasing', icon: 'bi bi-file-earmark-text' },
+    { href: '/dashboard?status=TE', label: 'Technical Evaluation', icon: 'bi bi-clipboard-check' },
+    { href: '/dashboard?status=RE-TE', label: 'Re-Technical Evaluation', icon: 'bi bi-arrow-repeat' },
+    { href: '/dashboard?status=PO', label: 'Purchase Order', icon: 'bi bi-bag-check' },
+    { href: '/report', label: 'Laporan', icon: 'bi bi-bar-chart-fill' },
 ]);
+
+const isActive = (item) => {
+    if (item.href === '/dashboard') {
+        return page.component === 'Dashboard/Index' && !page.url.includes('status=');
+    }
+    if (item.href.includes('status=')) {
+        const status = item.href.split('status=')[1];
+        return page.component === 'Dashboard/Index' && page.url.includes(`status=${status}`);
+    }
+    if (item.href.startsWith('/report')) {
+        return page.component === 'Report/Index';
+    }
+    return false;
+};
 
 const csrfToken = computed(() => {
     return document.querySelector('meta[name="csrf-token"]')?.content || '';
 });
 
-// Toast / Flash Logic (Clean UI Style)
+// Toast / Flash Logic (Neo-Brutalist Style)
 const showToast = ref(false);
 const toastMessage = ref('');
 const toastType = ref('success'); // 'success' or 'error'
@@ -54,110 +68,111 @@ watch(
 </script>
 
 <template>
-    <div 
-        class="min-h-screen bg-cover bg-center bg-fixed bg-no-repeat"
-        style="background-image: url('/images/kmi2.jpg');"
-    >
+    <div class="min-h-screen bg-[#F4F4F0] text-black font-sans antialiased flex flex-col md:flex-row">
         <!-- ═══════════════════════════════════════════ -->
-        <!-- SIDEBAR — Matches Blade Layout Exactly     -->
+        <!-- SIDEBAR - Yellow background, black border  -->
         <!-- ═══════════════════════════════════════════ -->
-        <div class="sidebar">
+        <aside class="w-full md:w-72 md:fixed md:top-0 md:left-0 md:h-screen bg-[#FACC15] border-b-4 md:border-b-0 md:border-r-4 border-black p-6 flex flex-col justify-between z-[100] overflow-y-auto">
             <div>
-                <!-- Sidebar Header (Logo) -->
-                <div class="sidebar-header">
-                    <img src="/images/kmi-logo.png" alt="KMI Logo" />
+                <!-- Stark White Branded Logo Box -->
+                <div class="bg-white border-4 border-black p-4 font-black shadow-[4px_4px_0px_0px_#000] text-center mb-8 uppercase tracking-widest text-lg md:text-xl">
+                    <div class="text-xs font-mono text-gray-500 tracking-normal mb-1">PT. KMI</div>
+                    P-MONITORING
                 </div>
 
-                <!-- Sidebar Menu Links -->
-                <div class="sidebar-menu">
+                <!-- Navigation Links as raised Neo-brutalist buttons -->
+                <nav class="space-y-4">
                     <a
                         v-for="item in navItems"
                         :key="item.href"
                         :href="item.href"
-                        :class="{ active: item.active }"
+                        class="block border-2 border-black p-3 font-bold shadow-[3px_3px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] transition-all duration-150 text-sm flex items-center gap-3 decoration-none text-black"
+                        :class="isActive(item) ? 'bg-white' : 'bg-[#22D3EE]'"
                     >
-                        <i :class="item.icon"></i>
-                        {{ item.label }}
+                        <i :class="[item.icon, 'text-base']"></i>
+                        <span>{{ item.label }}</span>
                     </a>
-                </div>
+                </nav>
             </div>
 
             <!-- Logout Section -->
-            <div class="logout">
-                <form method="POST" action="/logout">
+            <div class="mt-8 border-t-2 border-black pt-6 flex flex-col gap-4">
+                <form method="POST" action="/logout" class="w-full">
                     <input type="hidden" name="_token" :value="csrfToken" />
-                    <button type="submit">
-                        <i class="bi bi-box-arrow-right"></i>
+                    <button
+                        type="submit"
+                        class="w-full border-4 border-black bg-[#FF80FF] text-black font-black p-3 shadow-[4px_4px_0px_0px_#000] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none transition-all duration-150 cursor-pointer text-sm tracking-wider uppercase"
+                    >
+                        <i class="bi bi-box-arrow-right mr-1.5 font-bold"></i>
                         Logout
                     </button>
                 </form>
-                <div class="admin-text">
-                    {{ user?.name || 'Admin' }}
+                <div class="bg-white border-2 border-black py-2 px-3 text-center font-black text-xs shadow-[2px_2px_0px_0px_#000] tracking-wide uppercase">
+                    User: {{ user?.name || 'Admin' }}
                 </div>
             </div>
-        </div>
+        </aside>
 
         <!-- ═══════════════════════════════════════════ -->
         <!-- MAIN CONTENT AREA                          -->
         <!-- ═══════════════════════════════════════════ -->
-        <div class="content">
-            <!-- Topbar (Identical styling to Blade layout) -->
-            <div class="topbar bg-[#264a67] rounded-[20px] md:rounded-[45px] p-[22px_35px] w-full mb-[10px] text-white sticky top-[10px] z-[99]">
-                <div class="header-title text-[16px] font-bold">
+        <div class="flex-grow md:ml-72 p-6 md:p-8 flex flex-col min-h-screen">
+            <!-- Topbar (Stark Header) -->
+            <header class="bg-[#22D3EE] border-4 border-black p-4 md:p-5 shadow-[6px_6px_0px_0px_#000] mb-8 flex justify-between items-center">
+                <h1 class="text-sm md:text-base font-black uppercase tracking-wider">
                     PROCUREMENT SYSTEM - PT.KMI
-                </div>
-            </div>
+                </h1>
+                <span class="hidden md:inline bg-black text-[#FACC15] text-[10px] font-mono px-2 py-0.5 border border-black font-bold uppercase">
+                    SYS.V1.2
+                </span>
+            </header>
 
             <!-- Page Title -->
-            <div class="welcome-text mt-[5px] ml-[6px] mb-[8px] text-[30px] text-black font-extrabold">
-                {{ title }}
+            <div class="mb-6">
+                <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-black">
+                    {{ title }}
+                </h2>
             </div>
 
-            <!-- Slot content -->
-            <main>
+            <!-- Main view slot -->
+            <main class="flex-grow">
                 <slot />
             </main>
         </div>
 
         <!-- ═══════════════════════════════════════════ -->
-        <!-- GLOBAL CLEAN & MODERN TOAST NOTIFICATION  -->
+        <!-- GLOBAL NEO-BRUTALIST TOAST NOTIFICATION    -->
         <!-- ═══════════════════════════════════════════ -->
         <Transition name="toast-slide">
-            <div 
-                v-if="showToast" 
-                class="fixed bottom-6 right-6 z-[99999] w-[360px] bg-white border-l-4 p-4 rounded-r-xl rounded-l-md shadow-[0_10px_30px_rgba(0,0,0,0.12)] flex items-start gap-3 transition-all duration-300"
-                :class="toastType === 'success' ? 'border-green-500 bg-green-50/30' : 'border-red-500 bg-red-50/30'"
+            <div
+                v-if="showToast"
+                class="fixed bottom-6 right-6 z-[9999] w-[340px] bg-white border-4 border-black p-4 shadow-[6px_6px_0px_0px_#000] flex items-start gap-3"
             >
-                <!-- Icon success / error -->
-                <div class="flex-shrink-0 mt-0.5">
-                    <div 
-                        class="w-8 h-8 rounded-full flex items-center justify-center"
-                        :class="toastType === 'success' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'"
-                    >
-                        <i v-if="toastType === 'success'" class="bi bi-check-lg text-lg"></i>
-                        <i v-else class="bi bi-x-lg text-base"></i>
-                    </div>
+                <!-- Status color indicator -->
+                <div
+                    class="w-6 h-6 rounded-none flex items-center justify-center border-2 border-black flex-shrink-0"
+                    :class="toastType === 'success' ? 'bg-[#4ADE80]' : 'bg-[#FF80FF]'"
+                >
+                    <i v-if="toastType === 'success'" class="bi bi-check-lg text-sm font-black"></i>
+                    <i v-else class="bi bi-x-lg text-xs font-black"></i>
                 </div>
 
-                <!-- Text content -->
+                <!-- Text -->
                 <div class="flex-grow">
-                    <h4 
-                        class="text-sm font-bold tracking-tight"
-                        :class="toastType === 'success' ? 'text-green-950' : 'text-red-950'"
-                    >
-                        {{ toastType === 'success' ? 'Berhasil!' : 'Gagal!' }}
+                    <h4 class="text-xs font-black uppercase tracking-wider text-black">
+                        {{ toastType === 'success' ? 'BERHASIL' : 'GAGAL' }}
                     </h4>
-                    <p class="text-xs text-gray-500 font-medium mt-0.5 leading-relaxed">
+                    <p class="text-xs font-mono font-bold text-gray-700 mt-1 leading-relaxed">
                         {{ toastMessage }}
                     </p>
                 </div>
 
-                <!-- Close button -->
-                <button 
-                    @click="showToast = false" 
-                    class="flex-shrink-0 text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-100 transition duration-150"
+                <!-- Close -->
+                <button
+                    @click="showToast = false"
+                    class="text-black font-black hover:text-red-600 transition duration-150 flex-shrink-0"
                 >
-                    <i class="bi bi-x text-lg leading-none"></i>
+                    <i class="bi bi-x-lg text-sm"></i>
                 </button>
             </div>
         </Transition>
@@ -165,132 +180,16 @@ watch(
 </template>
 
 <style scoped>
-/* SIDEBAR */
-.sidebar{
-    width:240px;
-    height:100vh;
-    background:#2f3f52;
-    position:fixed;
-    top:0;
-    left:0;
-    z-index:100;
-    display:flex;
-    flex-direction:column;
-    color:white;
-}
-
-.sidebar-header{
-    padding:25px 20px;
-    text-align:center;
-    border-bottom:1px solid rgba(255,255,255,0.1);
-}
-
-.sidebar-header img{
-    width:150px;
-}
-
-.sidebar-menu{
-    padding-top:10px;
-}
-
-.sidebar-menu a{
-    display:block;
-    padding:15px 22px;
-    color:#ffffff;
-    text-decoration:none;
-    font-size:15px;
-    transition:0.3s;
-}
-
-.sidebar-menu a i {
-    margin-right: 8px;
-}
-
-.sidebar-menu a:hover{
-    background:#3e5670;
-    color:white;
-}
-
-.sidebar-menu .active{
-    background:#456ea4;
-    color:white;
-}
-
-/* LOGOUT */
-.logout{
-    margin-top:auto;
-    padding:25px 20px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    text-align:center;
-}
-
-.logout form{
-    width:100%;
-    display:flex;
-    justify-content:center;
-}
-
-.logout button{
-    width:180px;
-    border:none;
-    background:#dc3545;
-    color:white;
-    padding:12px;
-    border-radius:12px;
-    font-weight:bold;
-    transition:0.3s;
-}
-
-.logout button i {
-    margin-right: 8px;
-}
-
-.logout button:hover{
-    background:#bb2d3b;
-    transform:scale(1.03);
-}
-
-.admin-text{
-    margin-top:12px;
-    color:white;
-    font-weight:700;
-    font-size:16px;
-    text-align:center;
-}
-
-/* CONTENT */
-.content{
-    margin-left:240px;
-    padding:25px;
-}
-
-/* RESPONSIVE */
-@media(max-width:768px){
-    .sidebar {
-        width: 100% !important;
-        height: auto !important;
-        position: relative !important;
-    }
-    .content {
-        margin-left: 0 !important;
-        padding: 15px !important;
-    }
-}
-
 /* TOAST TRANSITION */
 .toast-slide-enter-active,
 .toast-slide-leave-active {
-    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .toast-slide-enter-from {
-    transform: translateY(15px) scale(0.95);
+    transform: translateY(15px);
     opacity: 0;
 }
 .toast-slide-leave-to {
-    transform: scale(0.95);
     opacity: 0;
 }
 </style>
