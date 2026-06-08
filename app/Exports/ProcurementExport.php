@@ -9,16 +9,10 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-
 use Illuminate\Support\Enumerable;
 
 class ProcurementExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
 {
-    /**
-     * Row counter for numbering.
-     */
-    private int $rowNumber = 0;
-
     /**
      * Query all procurement data ordered by latest.
      */
@@ -34,13 +28,20 @@ class ProcurementExport implements FromCollection, WithHeadings, WithMapping, Sh
     {
         return [
             'No',
-            'Kode Pengadaan',
-            'Nama Barang',
+            'RP',
+            'Description',
+            'Date Created',
+            'TE In',
+            'TE Out',
+            'Send for Approval General Director',
+            'RE-TE',
+            'Buyer',
+            'PO',
+            'SO',
+            'QC',
+            'Delivery',
+            'RR',
             'Vendor',
-            'Tanggal TE',
-            'Tanggal RE-TE',
-            'Tanggal PO',
-            'Status',
         ];
     }
 
@@ -49,17 +50,22 @@ class ProcurementExport implements FromCollection, WithHeadings, WithMapping, Sh
      */
     public function map($procurement): array
     {
-        $this->rowNumber++;
-
         return [
-            $this->rowNumber,
-            $procurement->kode_pengadaan,
-            $procurement->nama_barang,
+            $procurement->no,
+            $procurement->rp_number,
+            $procurement->description,
+            $procurement->date_created,
+            $procurement->te_in,
+            $procurement->te_out,
+            $procurement->send_for_approval_general_director,
+            $procurement->re_te,
+            $procurement->buyer,
+            $procurement->po,
+            $procurement->so,
+            $procurement->qc,
+            $procurement->delivery,
+            $procurement->rr,
             $procurement->vendor,
-            $procurement->tanggal_te?->format('Y-m-d') ?? '-',
-            $procurement->tanggal_rete?->format('Y-m-d') ?? '-',
-            $procurement->tanggal_po?->format('Y-m-d') ?? '-',
-            $procurement->status,
         ];
     }
 

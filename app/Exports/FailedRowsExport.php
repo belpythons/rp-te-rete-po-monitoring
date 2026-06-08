@@ -12,10 +12,6 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class FailedRowsExport implements FromArray, WithHeadings, ShouldAutoSize, WithStyles
 {
-    /**
-     * Array of failure data collected from ProcurementImport.
-     * Each entry has: row, attribute, errors, values
-     */
     private array $failures;
 
     public function __construct(array $failures)
@@ -30,12 +26,21 @@ class FailedRowsExport implements FromArray, WithHeadings, ShouldAutoSize, WithS
     {
         return [
             'Baris ke-',
-            'Kode Pengadaan',
-            'Nama Barang',
+            'No',
+            'RP',
+            'Description',
+            'Date Created',
+            'TE In',
+            'TE Out',
+            'Send for Approval General Director',
+            'RE-TE',
+            'Buyer',
+            'PO',
+            'SO',
+            'QC',
+            'Delivery',
+            'RR',
             'Vendor',
-            'Tanggal TE',
-            'Tanggal RE-TE',
-            'Tanggal PO',
             'Alasan Gagal / Error',
         ];
     }
@@ -50,12 +55,21 @@ class FailedRowsExport implements FromArray, WithHeadings, ShouldAutoSize, WithS
 
             return [
                 $failure['row'] ?? '-',
-                $values['kode_pengadaan'] ?? '-',
-                $values['nama_barang'] ?? '-',
+                $values['no'] ?? '-',
+                $values['rp'] ?? '-',
+                $values['description'] ?? '-',
+                $values['date_created'] ?? '-',
+                $values['te_in'] ?? '-',
+                $values['te_out'] ?? '-',
+                $values['send_for_approval_general_director'] ?? '-',
+                $values['re_te'] ?? '-',
+                $values['buyer'] ?? '-',
+                $values['po'] ?? '-',
+                $values['so'] ?? '-',
+                $values['qc'] ?? '-',
+                $values['delivery'] ?? '-',
+                $values['rr'] ?? '-',
                 $values['vendor'] ?? '-',
-                $values['tanggal_te'] ?? '-',
-                $values['tanggal_rete'] ?? '-',
-                $values['tanggal_po'] ?? '-',
                 implode('; ', $failure['errors'] ?? ['Unknown error']),
             ];
         }, $this->failures);
@@ -80,8 +94,8 @@ class FailedRowsExport implements FromArray, WithHeadings, ShouldAutoSize, WithS
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
                 ],
             ],
-            // Error reason column (H): light red background for emphasis
-            "H2:H{$lastRow}" => [
+            // Error reason column (Q): light red background for emphasis
+            "Q2:Q{$lastRow}" => [
                 'font' => ['color' => ['rgb' => 'CC0000'], 'bold' => true],
                 'fill' => [
                     'fillType'   => Fill::FILL_SOLID,

@@ -24,14 +24,23 @@ class ReportController extends Controller
         $procurements = Procurement::orderBy('id', 'desc')
             ->get()
             ->map(fn (Procurement $p) => [
-                'id'             => $p->id,
-                'kode_pengadaan' => $p->kode_pengadaan,
-                'nama_barang'    => $p->nama_barang,
-                'vendor'         => $p->vendor,
-                'tanggal_te'     => $p->tanggal_te?->format('Y-m-d'),
-                'tanggal_rete'   => $p->tanggal_rete?->format('Y-m-d'),
-                'tanggal_po'     => $p->tanggal_po?->format('Y-m-d'),
-                'status'         => $p->status,
+                'id'                                 => $p->id,
+                'no'                                 => $p->no,
+                'rp_number'                          => $p->rp_number,
+                'description'                        => $p->description,
+                'date_created'                       => $p->date_created,
+                'send_for_approval_general_director' => $p->send_for_approval_general_director,
+                'buyer'                              => $p->buyer,
+                'te_in'                              => $p->te_in,
+                'te_out'                             => $p->te_out,
+                're_te'                              => $p->re_te,
+                'po'                                 => $p->po,
+                'vendor'                             => $p->vendor,
+                'delivery'                           => $p->delivery,
+                'so'                                 => $p->so,
+                'qc'                                 => $p->qc,
+                'rr'                                 => $p->rr,
+                'status'                             => $p->status,
             ]);
 
         $importLogs = ImportLog::where('user_id', auth()->id())

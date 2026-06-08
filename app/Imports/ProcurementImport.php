@@ -46,7 +46,6 @@ class ProcurementImport implements
 
     /**
      * Counter for rows processed within current chunk.
-     * Resets per chunk since ShouldQueue serializes between chunks.
      */
     private int $chunkRowCount = 0;
 
@@ -60,7 +59,18 @@ class ProcurementImport implements
      */
     public function prepareForValidation(array $data, int $index): array
     {
-        foreach (['tanggal_te', 'tanggal_rete', 'tanggal_po'] as $field) {
+        $dateFields = [
+            'date_created',
+            'te_in',
+            'te_out',
+            'send_for_approval_general_director',
+            're_te',
+            'po',
+            'delivery',
+            'rr'
+        ];
+
+        foreach ($dateFields as $field) {
             if (isset($data[$field]) && is_numeric($data[$field])) {
                 $data[$field] = Date::excelToDateTimeObject($data[$field])->format('Y-m-d');
             }
@@ -70,53 +80,93 @@ class ProcurementImport implements
 
     /**
      * Map each Excel row to a Procurement model.
-     * Status is computed manually because upsert bypasses Eloquent events.
      */
     public function model(array $row): Procurement
     {
         $this->chunkRowCount++;
 
-        $tanggal_te = $row['tanggal_te'] ?: null;
-        if (is_numeric($tanggal_te)) {
-            $tanggal_te = Date::excelToDateTimeObject($tanggal_te)->format('Y-m-d');
+        $dateCreated = $row['date_created'] ?: null;
+        if (is_numeric($dateCreated)) {
+            $dateCreated = Date::excelToDateTimeObject($dateCreated)->format('Y-m-d');
         }
 
-        $tanggal_rete = $row['tanggal_rete'] ?: null;
-        if (is_numeric($tanggal_rete)) {
-            $tanggal_rete = Date::excelToDateTimeObject($tanggal_rete)->format('Y-m-d');
+        $teIn = $row['te_in'] ?: null;
+        if (is_numeric($teIn)) {
+            $teIn = Date::excelToDateTimeObject($teIn)->format('Y-m-d');
         }
 
-        $tanggal_po = $row['tanggal_po'] ?: null;
-        if (is_numeric($tanggal_po)) {
-            $tanggal_po = Date::excelToDateTimeObject($tanggal_po)->format('Y-m-d');
+        $teOut = $row['te_out'] ?: null;
+        if (is_numeric($teOut)) {
+            $teOut = Date::excelToDateTimeObject($teOut)->format('Y-m-d');
         }
 
-        $procurement = new Procurement([
-            'kode_pengadaan' => $row['kode_pengadaan'],
-            'nama_barang'    => $row['nama_barang'],
-            'vendor'         => $row['vendor'],
-            'tanggal_te'     => $tanggal_te,
-            'tanggal_rete'   => $tanggal_rete,
-            'tanggal_po'     => $tanggal_po,
-            'quantity'       => $row['quantity'] ?? null,
-            'departemen'     => $row['departemen'] ?? null,
-            'keterangan'     => $row['keterangan'] ?? null,
-            'hasil_evaluasi' => $row['hasil_evaluasi'] ?? null,
-            'catatan'        => $row['catatan'] ?? null,
+        $sendGen = $row['send_for_approval_general_director'] ?: null;
+        if (is_numeric($sendGen)) {
+            $sendGen = Date::excelToDateTimeObject($sendGen)->format('Y-m-d');
+        }
+
+        $reTe = $row['re_te'] ?: null;
+        if (is_numeric($reTe)) {
+            $reTe = Date::excelToDateTimeObject($reTe)->format('Y-m-d');
+        }
+
+        $po = $row['po'] ?: null;
+        if (is_numeric($po)) {
+            $po = Date::excelToDateTimeObject($po)->format('Y-m-d');
+        }
+
+        $delivery = $row['delivery'] ?: null;
+        if (is_numeric($delivery)) {
+            $delivery = Date::excelToDateTimeObject($delivery)->format('Y-m-d');
+        }
+
+        $rr = $row['rr'] ?: null;
+        if (is_numeric($rr)) {
+            $rr = Date::excelToDateTimeObject($rr)->format('Y-m-d');
+        }
+
+        $so = $row['so'] ?: null;
+        if (is_numeric($so)) {
+            $so = Date::excelToDateTimeObject($so)->format('Y-m-d');
+        }
+
+        // Compute status based on fields presence
+        if ($po || $so || $delivery || $rr) {
+            $status = 'PO';
+        } elseif ($reTe) {
+            $status = 'RE-TE';
+        } elseif ($teIn || $teOut) {
+            $status = 'TE';
+        } else {
+            $status = 'RP';
+        }
+
+        return new Procurement([
+            'no'                                 => (string)$row['no'],
+            'rp_number'                          => (string)$row['rp'],
+            'description'                        => (string)$row['description'],
+            'date_created'                       => $dateCreated,
+            'send_for_approval_general_director' => $sendGen,
+            'buyer'                              => $row['buyer'] ?: null,
+            'te_in'                              => $teIn,
+            'te_out'                             => $teOut,
+            're_te'                              => $reTe,
+            'po'                                 => $po,
+            'vendor'                             => $row['vendor'] ?: null,
+            'delivery'                           => $delivery,
+            'so'                                 => $so,
+            'qc'                                 => $row['qc'] ?: null,
+            'rr'                                 => $rr,
+            'status'                             => $status,
         ]);
-
-        // Manually compute status since upsert bypasses model boot events
-        $procurement->status = $procurement->computeStatus();
-
-        return $procurement;
     }
 
     /**
-     * Unique key for upsert — prevents duplicate kode_pengadaan.
+     * Unique key for upsert — prevents duplicate rp_number.
      */
     public function uniqueBy(): string
     {
-        return 'kode_pengadaan';
+        return 'rp_number';
     }
 
     /**
@@ -128,7 +178,7 @@ class ProcurementImport implements
     }
 
     /**
-     * Chunk reading size — each chunk becomes a separate queued job.
+     * Chunk reading size.
      */
     public function chunkSize(): int
     {
@@ -141,17 +191,9 @@ class ProcurementImport implements
     public function rules(): array
     {
         return [
-            'kode_pengadaan' => ['required', 'string', 'max:255'],
-            'nama_barang'    => ['required', 'string', 'max:255'],
-            'vendor'         => ['required', 'string', 'max:255'],
-            'tanggal_te'     => ['nullable', 'date_format:Y-m-d'],
-            'tanggal_rete'   => ['nullable', 'date_format:Y-m-d'],
-            'tanggal_po'     => ['nullable', 'date_format:Y-m-d'],
-            'quantity'       => ['nullable', 'string', 'max:100'],
-            'departemen'     => ['nullable', 'string', 'max:255'],
-            'keterangan'     => ['nullable', 'string'],
-            'hasil_evaluasi' => ['nullable', 'string'],
-            'catatan'        => ['nullable', 'string'],
+            'no'          => ['required'],
+            'rp'          => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string'],
         ];
     }
 
@@ -161,18 +203,14 @@ class ProcurementImport implements
     public function customValidationMessages(): array
     {
         return [
-            'kode_pengadaan.required' => 'Kode Pengadaan wajib diisi.',
-            'nama_barang.required'    => 'Nama Barang wajib diisi.',
-            'vendor.required'         => 'Vendor wajib diisi.',
-            'tanggal_te.date_format'  => 'Format Tanggal TE harus YYYY-MM-DD.',
-            'tanggal_rete.date_format' => 'Format Tanggal RE-TE harus YYYY-MM-DD.',
-            'tanggal_po.date_format'  => 'Format Tanggal PO harus YYYY-MM-DD.',
+            'no.required'          => 'Nomor baris (No) wajib diisi.',
+            'rp.required'          => 'Kolom RP (Kode Pengadaan) wajib diisi.',
+            'description.required' => 'Description (Deskripsi) wajib diisi.',
         ];
     }
 
     /**
-     * Handle validation failures — persist to JSONL file for cross-chunk collection.
-     * Overrides default SkipsOnFailure behavior which only stores in memory.
+     * Handle validation failures — persist to JSONL file.
      */
     public function onFailure(Failure ...$failures): void
     {
@@ -189,13 +227,12 @@ class ProcurementImport implements
         $path = $this->getFailuresFilePath();
         file_put_contents($path, $lines, FILE_APPEND | LOCK_EX);
 
-        // Update failure count in ImportLog
         ImportLog::where('id', $this->importLogId)
             ->increment('failure_count', count($failures));
     }
 
     /**
-     * Handle model/database errors — persist to same JSONL file.
+     * Handle model/database errors.
      */
     public function onError(Throwable $e): void
     {
@@ -223,7 +260,6 @@ class ProcurementImport implements
         return [
             BeforeImport::class => function (BeforeImport $event) {
                 $totalRows = $event->getReader()->getTotalRows();
-                // Get the row count of the first sheet dynamically
                 $firstSheetRows = count($totalRows) > 0 ? reset($totalRows) : 0;
                 $total = max(0, $firstSheetRows - 1);
 
@@ -237,7 +273,6 @@ class ProcurementImport implements
                     $processed = min($importLog->total_rows, $importLog->processed_rows + $this->chunkRowCount);
                     $importLog->update(['processed_rows' => $processed]);
 
-                    // Broadcast real-time progress via WebSocket
                     try {
                         event(new ImportProgressEvent(
                             $this->importLogId,
@@ -249,7 +284,6 @@ class ProcurementImport implements
                     }
                 }
 
-                // Reset chunk row counter for next chunk job
                 $this->chunkRowCount = 0;
             },
 
@@ -260,7 +294,7 @@ class ProcurementImport implements
     }
 
     /**
-     * After all chunks complete: generate error log, update ImportLog, broadcast.
+     * After all chunks complete.
      */
     private function handleImportCompletion(): void
     {
@@ -269,14 +303,10 @@ class ProcurementImport implements
             return;
         }
 
-        // Read collected failures from JSONL file
         $failures = $this->readFailuresFromFile();
         $failureCount = count($failures);
-
-        // Calculate success count
         $successCount = max(0, $importLog->total_rows - $failureCount);
 
-        // Generate Error Log Excel if there are failures
         $errorFilePath = null;
         if ($failureCount > 0) {
             $errorFileName = "imports/error_log_{$this->importLogId}.xlsx";
@@ -284,13 +314,9 @@ class ProcurementImport implements
             $errorFilePath = $errorFileName;
         }
 
-        // Update processed_rows to match total (import is done)
         $importLog->update(['processed_rows' => $importLog->total_rows]);
-
-        // Mark completed
         $importLog->markCompleted($successCount, $failureCount, $errorFilePath);
 
-        // Broadcast completion event (Event class created in Phase 3)
         try {
             event(new ImportCompletedEvent(
                 $this->importLogId,
@@ -302,16 +328,12 @@ class ProcurementImport implements
             Log::warning("Could not broadcast ImportCompletedEvent: {$e->getMessage()}");
         }
 
-        // Cleanup temp failures file
         $tempPath = $this->getFailuresFilePath();
         if (file_exists($tempPath)) {
             unlink($tempPath);
         }
     }
 
-    /**
-     * Get the file path for storing failures across chunks.
-     */
     private function getFailuresFilePath(): string
     {
         $dir = storage_path('app/imports');
@@ -321,9 +343,6 @@ class ProcurementImport implements
         return $dir . "/failures_{$this->importLogId}.jsonl";
     }
 
-    /**
-     * Read all failures from the JSONL temp file.
-     */
     private function readFailuresFromFile(): array
     {
         $path = $this->getFailuresFilePath();
