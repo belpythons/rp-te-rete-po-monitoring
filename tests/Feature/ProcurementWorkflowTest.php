@@ -42,24 +42,26 @@ class ProcurementWorkflowTest extends TestCase
         $response = $this->actingAs($this->admin)->post('/procurement/store', [
             'status' => 'RP',
         ]);
-        $response->assertSessionHasErrors(['kode_pengadaan', 'nama_barang']);
+        $response->assertSessionHasErrors(['no', 'rp_number', 'description', 'date_created']);
 
         // 2. Submit valid RP
         $response = $this->actingAs($this->admin)->post('/procurement/store', [
             'status' => 'RP',
-            'kode_pengadaan' => 'PRQ-TEST-001',
-            'nama_barang' => 'Test Laptop',
+            'no' => '49',
+            'rp_number' => 'PRQ-TEST-001',
+            'description' => 'Test Laptop',
+            'date_created' => 'Monday, June 1, 2026',
             'quantity' => '10 Pcs',
             'departemen' => 'IT',
-            'tanggal' => '2026-06-01',
         ]);
 
         $response->assertRedirect('/dashboard');
         $this->assertDatabaseHas('procurements', [
-            'kode_pengadaan' => 'PRQ-TEST-001',
-            'nama_barang' => 'Test Laptop',
+            'no' => '49',
+            'rp_number' => 'PRQ-TEST-001',
+            'description' => 'Test Laptop',
             'status' => 'RP',
-            'tanggal_in' => '2026-06-01 00:00:00',
+            'date_created' => 'Monday, June 1, 2026',
         ]);
     }
 
@@ -67,10 +69,11 @@ class ProcurementWorkflowTest extends TestCase
     {
         // Setup initial RP
         $procurement = Procurement::create([
+            'no' => '50',
             'status' => 'RP',
-            'kode_pengadaan' => 'PRQ-TEST-002',
-            'nama_barang' => 'Test Server',
-            'tanggal_in' => '2026-06-01',
+            'rp_number' => 'PRQ-TEST-002',
+            'description' => 'Test Server',
+            'date_created' => 'Monday, June 1, 2026',
         ]);
 
         // Transition 1: RP -> TE
@@ -79,8 +82,7 @@ class ProcurementWorkflowTest extends TestCase
         
         $procurement->refresh();
         $this->assertEquals('TE', $procurement->status);
-        $this->assertNotNull($procurement->tanggal_te);
-        $this->assertNull($procurement->tanggal_out);
+        $this->assertNotNull($procurement->te_in);
 
         // Transition 2: TE -> RE-TE
         $response = $this->actingAs($this->admin)->post("/procurement/approve-phase/{$procurement->id}", [
@@ -90,32 +92,29 @@ class ProcurementWorkflowTest extends TestCase
         
         $procurement->refresh();
         $this->assertEquals('RE-TE', $procurement->status);
-        $this->assertNotNull($procurement->tanggal_rete);
-        $this->assertNull($procurement->tanggal_out);
-        $oldReteDate = $procurement->tanggal_rete;
+        $this->assertNotNull($procurement->re_te);
+        $oldReteDate = $procurement->re_te;
 
         // Transition 3: RE-TE -> PO
-        // Let's sleep a moment or travel in time to check preserve
         $response = $this->actingAs($this->admin)->post("/procurement/approve-phase/{$procurement->id}");
         $response->assertRedirect();
         
         $procurement->refresh();
         $this->assertEquals('PO', $procurement->status);
-        $this->assertNotNull($procurement->tanggal_po);
-        $this->assertNotNull($procurement->tanggal_out);
-        // Original RETE date must remain preserved, NOT updated to PO transition time!
-        $this->assertEquals($oldReteDate, $procurement->tanggal_rete);
+        $this->assertNotNull($procurement->po);
+        $this->assertEquals($oldReteDate, $procurement->re_te);
     }
 
     public function test_workflow_po_transition_from_te_directly(): void
     {
         // Setup initial TE
         $procurement = Procurement::create([
+            'no' => '51',
             'status' => 'TE',
-            'kode_pengadaan' => 'PRQ-TEST-003',
-            'nama_barang' => 'Test Cloud',
-            'tanggal_in' => '2026-06-01',
-            'tanggal_te' => '2026-06-02',
+            'rp_number' => 'PRQ-TEST-003',
+            'description' => 'Test Cloud',
+            'date_created' => 'Monday, June 1, 2026',
+            'te_in' => 'Tuesday, June 2, 2026',
         ]);
 
         // Transition: TE -> PO directly (RE-TE remains null)
@@ -126,9 +125,7 @@ class ProcurementWorkflowTest extends TestCase
         
         $procurement->refresh();
         $this->assertEquals('PO', $procurement->status);
-        $this->assertNotNull($procurement->tanggal_po);
-        $this->assertNotNull($procurement->tanggal_out);
-        // RETE must remain null, not updated to now()
-        $this->assertNull($procurement->tanggal_rete);
+        $this->assertNotNull($procurement->po);
+        $this->assertNull($procurement->re_te);
     }
 }
