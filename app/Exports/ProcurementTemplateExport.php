@@ -14,49 +14,75 @@ class ProcurementTemplateExport implements FromArray, WithHeadings, ShouldAutoSi
 {
     /**
      * Column headings matching the import format.
-     * These are the exact headers that ProcurementImport expects.
      */
     public function headings(): array
     {
         return [
-            'kode_pengadaan',
-            'nama_barang',
-            'vendor',
-            'tanggal_te',
-            'tanggal_rete',
-            'tanggal_po',
+            'No',
+            'RP',
+            'Description',
+            'Date Created',
+            'TE In',
+            'TE Out',
+            'Send for Approval General Director',
+            'RE-TE',
+            'Buyer',
+            'PO',
+            'SO',
+            'QC',
+            'Delivery',
+            'RR',
+            'Vendor',
         ];
     }
 
     /**
-     * One example/guide row showing correct data format.
+     * Example and guide rows.
      */
     public function array(): array
     {
         return [
-            // Row 1: Example data with guide values
+            // Row 1: Example data
             [
-                'PKD-001',
-                'Contoh Nama Barang',
-                'PT. Contoh Vendor',
-                '2026-01-15',
-                '2026-02-20',
-                '2026-03-10',
+                '1',
+                '1000003892',
+                'IT Peripheral',
+                'Wednesday, April 23, 2025',
+                'Tuesday, May 27, 2025',
+                'Tuesday, May 27, 2025',
+                'Wednesday, April 23, 2025',
+                '',
+                'SU',
+                'Monday, June 16, 2025',
+                '',
+                'Monday, July 7, 2025',
+                'Tuesday, July 15, 2025',
+                'Monday, July 7, 2025',
+                'PT Alpha Cipta',
             ],
-            // Row 2: Guide notes explaining format rules
+            // Row 2: Format guides
             [
-                '(Wajib diisi, unik)',
-                '(Wajib diisi)',
-                '(Wajib diisi)',
-                '(Opsional, format: YYYY-MM-DD)',
-                '(Opsional, format: YYYY-MM-DD)',
-                '(Opsional, format: YYYY-MM-DD)',
+                '(Wajib, misal: 1)',
+                '(Wajib, unik, misal: 1000003892)',
+                '(Wajib, teks)',
+                '(Wajib, teks tanggal)',
+                '(Opsional, teks tanggal)',
+                '(Opsional, teks tanggal)',
+                '(Opsional, teks tanggal)',
+                '(Opsional, teks tanggal)',
+                '(Opsional, inisial)',
+                '(Opsional, teks tanggal)',
+                '(Opsional, teks tanggal)',
+                '(Opsional, teks tanggal/no)',
+                '(Opsional, teks tanggal)',
+                '(Opsional, teks tanggal)',
+                '(Opsional, nama vendor)',
             ],
         ];
     }
 
     /**
-     * Style the template for clarity.
+     * Style the template worksheet.
      */
     public function styles(Worksheet $sheet): array
     {

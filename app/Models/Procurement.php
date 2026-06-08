@@ -15,126 +15,28 @@ class Procurement extends Model
      * Mass-assignable attributes.
      */
     protected $fillable = [
-        'kode_pengadaan',
-        'nama_barang',
+        'no',
+        'rp_number',
+        'description',
+        'date_created',
+        'send_for_approval_general_director',
+        'buyer',
+        'te_in',
+        'te_out',
+        're_te',
+        'po',
         'vendor',
-        'tanggal_te',
-        'tanggal_rete',
-        'tanggal_po',
-        'tanggal_in',
-        'tanggal_out',
+        'delivery',
+        'so',
+        'qc',
+        'rr',
         'status',
-        'quantity',
-        'departemen',
-        'keterangan',
-        'hasil_evaluasi',
-        'catatan',
     ];
 
     /**
-     * Attribute casting.
+     * Attribute casting (removed date casts since all date columns are strings).
      */
-    protected $casts = [
-        'tanggal_te'   => 'date',
-        'tanggal_rete' => 'date',
-        'tanggal_po'   => 'date',
-        'tanggal_in'   => 'date',
-        'tanggal_out'  => 'date',
-    ];
-
-    /**
-     * Boot method — register model event for auto-computing status.
-     */
-    protected static function booted(): void
-    {
-        static::saving(function (Procurement $procurement) {
-            if ($procurement->isDirty('status')) {
-                $procurement->syncDatesWithStatus($procurement->status);
-            } else {
-                $procurement->status = $procurement->computeStatus();
-            }
-        });
-    }
-
-    /**
-     * Synchronize date fields automatically based on target status.
-     */
-    public function syncDatesWithStatus(string $status): void
-    {
-        $now = now();
-
-        if ($status === self::STATUS_RP) {
-            $this->tanggal_te = null;
-            $this->tanggal_rete = null;
-            $this->tanggal_po = null;
-            $this->tanggal_out = null;
-            if (is_null($this->tanggal_in)) {
-                $this->tanggal_in = $now;
-            }
-        } elseif ($status === self::STATUS_TE) {
-            if (is_null($this->tanggal_in)) {
-                $this->tanggal_in = $now;
-            }
-            if (is_null($this->tanggal_te)) {
-                $this->tanggal_te = $now;
-            }
-            $this->tanggal_rete = null;
-            $this->tanggal_po = null;
-        } elseif ($status === self::STATUS_RETE) {
-            if (is_null($this->tanggal_in)) {
-                $this->tanggal_in = $now;
-            }
-            if (is_null($this->tanggal_te)) {
-                $this->tanggal_te = $now;
-            }
-            if (is_null($this->tanggal_rete)) {
-                $this->tanggal_rete = $now;
-            }
-            $this->tanggal_po = null;
-        } elseif ($status === self::STATUS_PO) {
-            if (is_null($this->tanggal_in)) {
-                $this->tanggal_in = $now;
-            }
-            if (is_null($this->tanggal_te)) {
-                $this->tanggal_te = $now;
-            }
-            if (is_null($this->tanggal_po)) {
-                $this->tanggal_po = $now;
-            }
-        }
-    }
-
-    /**
-     * Compute the procurement status based on which date fields are filled.
-     */
-    public function computeStatus(): string
-    {
-        if (!is_null($this->tanggal_po)) {
-            return 'PO';
-        }
-
-        if (!is_null($this->tanggal_rete)) {
-            return 'RE-TE';
-        }
-
-        if (!is_null($this->tanggal_te)) {
-            return 'TE';
-        }
-
-        return 'RP';
-    }
-
-    /**
-     * Get the active/latest phase date.
-     */
-    public function getTanggalAttribute()
-    {
-        return $this->tanggal_po 
-            ?? $this->tanggal_rete 
-            ?? $this->tanggal_te 
-            ?? $this->tanggal_in 
-            ?? $this->created_at;
-    }
+    protected $casts = [];
 
     /**
      * Status constants for reference throughout the application.
