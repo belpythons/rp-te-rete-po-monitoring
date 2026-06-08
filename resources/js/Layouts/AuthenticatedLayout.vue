@@ -39,10 +39,10 @@ const csrfToken = computed(() => {
     return document.querySelector('meta[name="csrf-token"]')?.content || '';
 });
 
-// Toast / Flash Logic (Neo-Brutalist Style)
+// Toast / Flash Logic
 const showToast = ref(false);
 const toastMessage = ref('');
-const toastType = ref('success'); // 'success' or 'error'
+const toastType = ref('success');
 
 watch(
     () => page.props.flash,
@@ -68,26 +68,40 @@ watch(
 </script>
 
 <template>
-    <div class="min-h-screen bg-[#F4F4F0] text-black font-sans antialiased flex flex-col md:flex-row">
+    <div class="min-h-screen text-slate-800 font-sans antialiased flex flex-col md:flex-row relative">
+        <!-- Main Background Image with Translucent White Overlay -->
+        <div 
+            class="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+            style="background-image: url('/images/kmi1.jpg');"
+        ></div>
+        <div class="absolute inset-0 z-10 bg-white/90 backdrop-blur-[2px]"></div>
+
         <!-- ═══════════════════════════════════════════ -->
-        <!-- SIDEBAR - Yellow background, black border  -->
+        <!-- SIDEBAR - Slate-800 background             -->
         <!-- ═══════════════════════════════════════════ -->
-        <aside class="w-full md:w-72 md:fixed md:top-0 md:left-0 md:h-screen bg-[#FACC15] border-b-4 md:border-b-0 md:border-r-4 border-black p-6 flex flex-col justify-between z-[100] overflow-y-auto">
+        <aside class="w-full md:w-72 md:fixed md:top-0 md:left-0 md:h-screen bg-slate-800 text-slate-100 p-6 flex flex-col justify-between z-30 shadow-xl overflow-y-auto">
             <div>
-                <!-- Stark White Branded Logo Box -->
-                <div class="bg-white border-4 border-black p-4 font-black shadow-[4px_4px_0px_0px_#000] text-center mb-8 uppercase tracking-widest text-lg md:text-xl">
-                    <div class="text-xs font-mono text-gray-500 tracking-normal mb-1">PT. KMI</div>
-                    P-MONITORING
+                <!-- KMI Logo & Title -->
+                <div class="flex flex-col items-center mb-8 text-center border-b border-slate-700 pb-6">
+                    <img 
+                        src="/images/kmi-logo.png" 
+                        alt="KMI Logo" 
+                        class="h-16 w-auto mb-3 object-contain bg-white/10 p-1.5 rounded-lg"
+                    />
+                    <div class="text-xs font-mono text-slate-400 tracking-widest uppercase">PT. KMI</div>
+                    <div class="text-sm font-semibold text-slate-200 tracking-wide mt-1">Kaltim Methanol Industri</div>
                 </div>
 
-                <!-- Navigation Links as raised Neo-brutalist buttons -->
-                <nav class="space-y-4">
+                <!-- Navigation Links -->
+                <nav class="space-y-2">
                     <a
                         v-for="item in navItems"
                         :key="item.href"
                         :href="item.href"
-                        class="block border-2 border-black p-3 font-bold shadow-[3px_3px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#000] transition-all duration-150 text-sm flex items-center gap-3 decoration-none text-black"
-                        :class="isActive(item) ? 'bg-white' : 'bg-[#22D3EE]'"
+                        class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-150 decoration-none"
+                        :class="isActive(item) 
+                            ? 'bg-blue-600 text-white shadow-md' 
+                            : 'text-slate-300 hover:bg-slate-700 hover:text-white'"
                     >
                         <i :class="[item.icon, 'text-base']"></i>
                         <span>{{ item.label }}</span>
@@ -95,74 +109,66 @@ watch(
                 </nav>
             </div>
 
-            <!-- Logout Section -->
-            <div class="mt-8 border-t-2 border-black pt-6 flex flex-col gap-4">
+            <!-- Logout Section & User Profile -->
+            <div class="mt-8 border-t border-slate-700 pt-6 flex flex-col gap-3">
+                <div class="text-slate-400 text-xs font-mono text-center mb-1">
+                    User: <span class="text-slate-200 font-semibold uppercase">{{ user?.name || 'Admin' }}</span>
+                </div>
                 <form method="POST" action="/logout" class="w-full">
                     <input type="hidden" name="_token" :value="csrfToken" />
                     <button
                         type="submit"
-                        class="w-full border-4 border-black bg-[#FF80FF] text-black font-black p-3 shadow-[4px_4px_0px_0px_#000] hover:-translate-x-1 hover:-translate-y-1 hover:shadow-none transition-all duration-150 cursor-pointer text-sm tracking-wider uppercase"
+                        class="w-full bg-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-red-700 transition duration-150 cursor-pointer text-sm shadow-md flex items-center justify-center gap-2"
                     >
-                        <i class="bi bi-box-arrow-right mr-1.5 font-bold"></i>
+                        <i class="bi bi-box-arrow-right"></i>
                         Logout
                     </button>
                 </form>
-                <div class="bg-white border-2 border-black py-2 px-3 text-center font-black text-xs shadow-[2px_2px_0px_0px_#000] tracking-wide uppercase">
-                    User: {{ user?.name || 'Admin' }}
-                </div>
             </div>
         </aside>
 
         <!-- ═══════════════════════════════════════════ -->
         <!-- MAIN CONTENT AREA                          -->
         <!-- ═══════════════════════════════════════════ -->
-        <div class="flex-grow md:ml-72 p-6 md:p-8 flex flex-col min-h-screen">
-            <!-- Topbar (Stark Header) -->
-            <header class="bg-[#22D3EE] border-4 border-black p-4 md:p-5 shadow-[6px_6px_0px_0px_#000] mb-8 flex justify-between items-center">
-                <h1 class="text-sm md:text-base font-black uppercase tracking-wider">
-                    PROCUREMENT SYSTEM - PT.KMI
+        <div class="flex-grow md:ml-72 p-6 md:p-8 flex flex-col min-h-screen z-20 relative">
+            <!-- Topbar Header -->
+            <header class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 md:p-5 mb-8 flex justify-between items-center">
+                <h1 class="text-base md:text-lg font-bold text-slate-800">
+                    Selamat Datang, Admin
                 </h1>
-                <span class="hidden md:inline bg-black text-[#FACC15] text-[10px] font-mono px-2 py-0.5 border border-black font-bold uppercase">
-                    SYS.V1.2
+                <span class="bg-blue-50 text-blue-700 text-xs font-mono px-3 py-1 rounded-full font-semibold border border-blue-100">
+                    SYSTEM V2.0
                 </span>
             </header>
 
-            <!-- Page Title -->
-            <div class="mb-6">
-                <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-black">
-                    {{ title }}
-                </h2>
-            </div>
-
             <!-- Main view slot -->
-            <main class="flex-grow">
+            <main class="flex-grow flex flex-col">
                 <slot />
             </main>
         </div>
 
         <!-- ═══════════════════════════════════════════ -->
-        <!-- GLOBAL NEO-BRUTALIST TOAST NOTIFICATION    -->
+        <!-- GLOBAL TOAST NOTIFICATION                  -->
         <!-- ═══════════════════════════════════════════ -->
         <Transition name="toast-slide">
             <div
                 v-if="showToast"
-                class="fixed bottom-6 right-6 z-[9999] w-[340px] bg-white border-4 border-black p-4 shadow-[6px_6px_0px_0px_#000] flex items-start gap-3"
+                class="fixed bottom-6 right-6 z-50 w-[340px] bg-white border border-slate-200 p-4 rounded-xl shadow-lg flex items-start gap-3"
             >
-                <!-- Status color indicator -->
                 <div
-                    class="w-6 h-6 rounded-none flex items-center justify-center border-2 border-black flex-shrink-0"
-                    :class="toastType === 'success' ? 'bg-[#4ADE80]' : 'bg-[#FF80FF]'"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                    :class="toastType === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
                 >
-                    <i v-if="toastType === 'success'" class="bi bi-check-lg text-sm font-black"></i>
-                    <i v-else class="bi bi-x-lg text-xs font-black"></i>
+                    <i v-if="toastType === 'success'" class="bi bi-check-lg text-lg font-bold"></i>
+                    <i v-else class="bi bi-x-lg text-base font-bold"></i>
                 </div>
 
                 <!-- Text -->
                 <div class="flex-grow">
-                    <h4 class="text-xs font-black uppercase tracking-wider text-black">
-                        {{ toastType === 'success' ? 'BERHASIL' : 'GAGAL' }}
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">
+                        {{ toastType === 'success' ? 'Berhasil' : 'Gagal' }}
                     </h4>
-                    <p class="text-xs font-mono font-bold text-gray-700 mt-1 leading-relaxed">
+                    <p class="text-xs font-mono text-slate-500 mt-1 leading-relaxed">
                         {{ toastMessage }}
                     </p>
                 </div>
@@ -170,7 +176,7 @@ watch(
                 <!-- Close -->
                 <button
                     @click="showToast = false"
-                    class="text-black font-black hover:text-red-600 transition duration-150 flex-shrink-0"
+                    class="text-slate-400 hover:text-slate-600 transition duration-150 flex-shrink-0"
                 >
                     <i class="bi bi-x-lg text-sm"></i>
                 </button>
