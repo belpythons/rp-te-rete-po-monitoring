@@ -12,6 +12,7 @@ class ProcurementController extends Controller
     |--------------------------------------------------------------------------
     | READ DATA
     |--------------------------------------------------------------------------
+    |
     */
     public function index(Request $request)
     {
@@ -24,32 +25,287 @@ class ProcurementController extends Controller
                 $q->where('rp_number', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%")
                   ->orWhere('vendor', 'like', "%{$search}%")
+                  ->orWhere('status', 'like', "%{$search}%")
+                  ->orWhere('phase', 'like', "%{$search}%");
+            });
+        }
+
+        // MONTH/YEAR FILTER
+        if ($request->filled('month_year')) {
+            $query->whereRaw("DATE_FORMAT(tanggal_masuk, '%Y-%m') = ?", [$request->month_year]);
+        }
+
+        // Limit results to only records with valid status
+        $query->whereIn('status', ['Pending', 'Disetujui', 'Tidak Disetujui', 'RP', 'TE', 'RE-TE', 'PO']);
+
+        $procurements = $query
+            ->orderBy('tanggal_masuk', 'asc')
+            ->paginate(15)
+            ->withQueryString();
+
+        // Chart monthly trends
+        $allProcurements = Procurement::whereNotNull('tanggal_masuk')->get();
+        $monthlyCounts = [];
+        foreach ($allProcurements as $p) {
+            $ym = \Carbon\Carbon::parse($p->tanggal_masuk)->format('Y-m');
+            $monthlyCounts[$ym] = ($monthlyCounts[$ym] ?? 0) + 1;
+        }
+        ksort($monthlyCounts);
+
+        $chartCategories = [];
+        $chartSeries = [];
+        foreach ($monthlyCounts as $ym => $count) {
+            $chartCategories[] = \Carbon\Carbon::createFromFormat('Y-m', $ym)->translatedFormat('F Y');
+            $chartSeries[] = $count;
+        }
+
+        $chartData = [
+            'categories' => $chartCategories,
+            'series' => $chartSeries,
+        ];
+
+        // Available Months filter dropdown options
+        $availableMonths = Procurement::whereNotNull('tanggal_masuk')
+            ->orderBy('tanggal_masuk', 'desc')
+            ->pluck('tanggal_masuk')
+            ->map(function ($date) {
+                $carbon = \Carbon\Carbon::parse($date);
+                return [
+                    'value' => $carbon->format('Y-m'),
+                    'label' => $carbon->translatedFormat('F Y'),
+                ];
+            })
+            ->unique('value')
+            ->values()
+            ->toArray();
+
+        // Total stats for the overview
+        $totalRP = Procurement::where('phase', 'RP')->count();
+        $totalTE = Procurement::where('phase', 'TE')->count();
+        $totalRETE = Procurement::where('phase', 'RE-TE')->count();
+        $totalPO = Procurement::where('phase', 'PO')->count();
+
+        return Inertia::render('Dashboard/Index', [
+            'procurements'    => $procurements,
+            'totalRP'         => $totalRP,
+            'totalTE'         => $totalTE,
+            'totalRETE'       => $totalRETE,
+            'totalPO'         => $totalPO,
+            'chartData'       => $chartData,
+            'availableMonths' => $availableMonths,
+            'filters'         => $request->only(['search', 'month_year']),
+        ]);
+    }
+
+    /**
+     * Request Purchasing phase page.
+     */
+    public function requestPurchasing(Request $request)
+    {
+        $query = Procurement::where('phase', 'RP');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('rp_number', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('vendor', 'like', "%{$search}%")
                   ->orWhere('status', 'like', "%{$search}%");
             });
         }
 
-        // STATUS FILTER
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        if ($request->filled('month_year')) {
+            $query->whereRaw("DATE_FORMAT(tanggal_masuk, '%Y-%m') = ?", [$request->month_year]);
         }
 
+        $query->whereIn('status', ['Pending', 'Disetujui', 'Tidak Disetujui', 'RP', 'TE', 'RE-TE', 'PO']);
+
         $procurements = $query
-            ->orderBy('id', 'desc')
-            ->get();
+            ->orderBy('tanggal_masuk', 'asc')
+            ->paginate(15)
+            ->withQueryString();
 
-        // TOTAL CARD (using class constants)
-        $totalRP = Procurement::where('status', Procurement::STATUS_RP)->count();
-        $totalTE = Procurement::where('status', Procurement::STATUS_TE)->count();
-        $totalRETE = Procurement::where('status', Procurement::STATUS_RETE)->count();
-        $totalPO = Procurement::where('status', Procurement::STATUS_PO)->count();
+        $availableMonths = Procurement::where('phase', 'RP')
+            ->whereNotNull('tanggal_masuk')
+            ->orderBy('tanggal_masuk', 'desc')
+            ->pluck('tanggal_masuk')
+            ->map(function ($date) {
+                $carbon = \Carbon\Carbon::parse($date);
+                return [
+                    'value' => $carbon->format('Y-m'),
+                    'label' => $carbon->translatedFormat('F Y'),
+                ];
+            })
+            ->unique('value')
+            ->values()
+            ->toArray();
 
-        return Inertia::render('Dashboard/Index', [
-            'procurements' => $procurements,
-            'totalRP'      => $totalRP,
-            'totalTE'      => $totalTE,
-            'totalRETE'    => $totalRETE,
-            'totalPO'      => $totalPO,
-            'filters'      => $request->only(['search', 'status']),
+        $totalRP = Procurement::where('phase', 'RP')->count();
+
+        return Inertia::render('RequestPurchasing/Index', [
+            'procurements'    => $procurements,
+            'totalRP'         => $totalRP,
+            'availableMonths' => $availableMonths,
+            'filters'         => $request->only(['search', 'month_year']),
+        ]);
+    }
+
+    /**
+     * Technical Evaluation phase page.
+     */
+    public function technicalEvaluation(Request $request)
+    {
+        $query = Procurement::where('phase', 'TE');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('rp_number', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('vendor', 'like', "%{$search}%")
+                  ->orWhere('status', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('month_year')) {
+            $query->whereRaw("DATE_FORMAT(tanggal_masuk, '%Y-%m') = ?", [$request->month_year]);
+        }
+
+        $query->whereIn('status', ['Pending', 'Disetujui', 'Tidak Disetujui', 'RP', 'TE', 'RE-TE', 'PO']);
+
+        $procurements = $query
+            ->orderBy('tanggal_masuk', 'asc')
+            ->paginate(15)
+            ->withQueryString();
+
+        $availableMonths = Procurement::where('phase', 'TE')
+            ->whereNotNull('tanggal_masuk')
+            ->orderBy('tanggal_masuk', 'desc')
+            ->pluck('tanggal_masuk')
+            ->map(function ($date) {
+                $carbon = \Carbon\Carbon::parse($date);
+                return [
+                    'value' => $carbon->format('Y-m'),
+                    'label' => $carbon->translatedFormat('F Y'),
+                ];
+            })
+            ->unique('value')
+            ->values()
+            ->toArray();
+
+        $totalTE = Procurement::where('phase', 'TE')->count();
+
+        return Inertia::render('TechnicalEvaluation/Index', [
+            'procurements'    => $procurements,
+            'totalTE'         => $totalTE,
+            'availableMonths' => $availableMonths,
+            'filters'         => $request->only(['search', 'month_year']),
+        ]);
+    }
+
+    /**
+     * Re-Technical Evaluation phase page.
+     */
+    public function reTechnicalEvaluation(Request $request)
+    {
+        $query = Procurement::where('phase', 'RE-TE');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('rp_number', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('vendor', 'like', "%{$search}%")
+                  ->orWhere('status', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('month_year')) {
+            $query->whereRaw("DATE_FORMAT(tanggal_masuk, '%Y-%m') = ?", [$request->month_year]);
+        }
+
+        $query->whereIn('status', ['Pending', 'Disetujui', 'Tidak Disetujui', 'RP', 'TE', 'RE-TE', 'PO']);
+
+        $procurements = $query
+            ->orderBy('tanggal_masuk', 'asc')
+            ->paginate(15)
+            ->withQueryString();
+
+        $availableMonths = Procurement::where('phase', 'RE-TE')
+            ->whereNotNull('tanggal_masuk')
+            ->orderBy('tanggal_masuk', 'desc')
+            ->pluck('tanggal_masuk')
+            ->map(function ($date) {
+                $carbon = \Carbon\Carbon::parse($date);
+                return [
+                    'value' => $carbon->format('Y-m'),
+                    'label' => $carbon->translatedFormat('F Y'),
+                ];
+            })
+            ->unique('value')
+            ->values()
+            ->toArray();
+
+        $totalRETE = Procurement::where('phase', 'RE-TE')->count();
+
+        return Inertia::render('ReTechnicalEvaluation/Index', [
+            'procurements'    => $procurements,
+            'totalRETE'       => $totalRETE,
+            'availableMonths' => $availableMonths,
+            'filters'         => $request->only(['search', 'month_year']),
+        ]);
+    }
+
+    /**
+     * Purchase Order phase page.
+     */
+    public function purchaseOrder(Request $request)
+    {
+        $query = Procurement::where('phase', 'PO');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('rp_number', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('vendor', 'like', "%{$search}%")
+                  ->orWhere('status', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('month_year')) {
+            $query->whereRaw("DATE_FORMAT(tanggal_masuk, '%Y-%m') = ?", [$request->month_year]);
+        }
+
+        $query->whereIn('status', ['Pending', 'Disetujui', 'Tidak Disetujui', 'RP', 'TE', 'RE-TE', 'PO']);
+
+        $procurements = $query
+            ->orderBy('tanggal_masuk', 'asc')
+            ->paginate(15)
+            ->withQueryString();
+
+        $availableMonths = Procurement::where('phase', 'PO')
+            ->whereNotNull('tanggal_masuk')
+            ->orderBy('tanggal_masuk', 'desc')
+            ->pluck('tanggal_masuk')
+            ->map(function ($date) {
+                $carbon = \Carbon\Carbon::parse($date);
+                return [
+                    'value' => $carbon->format('Y-m'),
+                    'label' => $carbon->translatedFormat('F Y'),
+                ];
+            })
+            ->unique('value')
+            ->values()
+            ->toArray();
+
+        $totalPO = Procurement::where('phase', 'PO')->count();
+
+        return Inertia::render('PurchaseOrder/Index', [
+            'procurements'    => $procurements,
+            'totalPO'         => $totalPO,
+            'availableMonths' => $availableMonths,
+            'filters'         => $request->only(['search', 'month_year']),
         ]);
     }
 
@@ -75,7 +331,8 @@ class ProcurementController extends Controller
             'rp_number'                          => 'required|string|max:255|unique:procurements,rp_number',
             'description'                        => 'required|string',
             'date_created'                       => 'required|string',
-            'status'                             => 'required|in:RP,TE,RE-TE,PO',
+            'status'                             => 'required|in:Pending,Disetujui,Tidak Disetujui,RP,TE,RE-TE,PO',
+            'phase'                              => 'required|in:RP,TE,RE-TE,PO',
             'send_for_approval_general_director' => 'nullable|string|max:255',
             'buyer'                              => 'nullable|string|max:255',
             'te_in'                              => 'nullable|string|max:255',
@@ -91,7 +348,15 @@ class ProcurementController extends Controller
 
         $request->validate($rules);
 
-        Procurement::create($request->all());
+        $data = $request->all();
+        if ($request->filled('date_created')) {
+            $parsed = Procurement::parseDateString($request->date_created);
+            if ($parsed) {
+                $data['tanggal_masuk'] = $parsed->format('Y-m-d');
+            }
+        }
+
+        Procurement::create($data);
 
         return redirect()->to('/dashboard')
             ->with('success', 'Data procurement berhasil ditambahkan!');
@@ -111,7 +376,8 @@ class ProcurementController extends Controller
             'rp_number'                          => 'required|string|max:255|unique:procurements,rp_number,' . $id,
             'description'                        => 'required|string',
             'date_created'                       => 'required|string',
-            'status'                             => 'required|in:RP,TE,RE-TE,PO',
+            'status'                             => 'required|in:Pending,Disetujui,Tidak Disetujui,RP,TE,RE-TE,PO',
+            'phase'                              => 'required|in:RP,TE,RE-TE,PO',
             'send_for_approval_general_director' => 'nullable|string|max:255',
             'buyer'                              => 'nullable|string|max:255',
             'te_in'                              => 'nullable|string|max:255',
@@ -127,7 +393,15 @@ class ProcurementController extends Controller
 
         $request->validate($rules);
 
-        $procurement->update($request->all());
+        $data = $request->all();
+        if ($request->filled('date_created')) {
+            $parsed = Procurement::parseDateString($request->date_created);
+            if ($parsed) {
+                $data['tanggal_masuk'] = $parsed->format('Y-m-d');
+            }
+        }
+
+        $procurement->update($data);
 
         return redirect()->to('/dashboard')
             ->with('success', 'Data procurement berhasil diperbarui!');
@@ -155,29 +429,29 @@ class ProcurementController extends Controller
     public function approvePhase(Request $request, $id)
     {
         $procurement = Procurement::findOrFail($id);
-        $currentStatus = $procurement->status;
+        $currentPhase = $procurement->phase;
         $nowStr = now()->format('l, F j, Y');
 
-        if ($currentStatus === Procurement::STATUS_RP) {
-            $procurement->status = Procurement::STATUS_TE;
+        if ($currentPhase === Procurement::PHASE_RP) {
+            $procurement->phase = Procurement::PHASE_TE;
             if (empty($procurement->te_in)) {
                 $procurement->te_in = $nowStr;
             }
-        } elseif ($currentStatus === Procurement::STATUS_TE) {
+        } elseif ($currentPhase === Procurement::PHASE_TE) {
             $target = $request->input('target', 'RE-TE');
             if ($target === 'RE-TE') {
-                $procurement->status = Procurement::STATUS_RETE;
+                $procurement->phase = Procurement::PHASE_RETE;
                 if (empty($procurement->re_te)) {
                     $procurement->re_te = $nowStr;
                 }
             } else {
-                $procurement->status = Procurement::STATUS_PO;
+                $procurement->phase = Procurement::PHASE_PO;
                 if (empty($procurement->po)) {
                     $procurement->po = $nowStr;
                 }
             }
-        } elseif ($currentStatus === Procurement::STATUS_RETE) {
-            $procurement->status = Procurement::STATUS_PO;
+        } elseif ($currentPhase === Procurement::PHASE_RETE) {
+            $procurement->phase = Procurement::PHASE_PO;
             if (empty($procurement->po)) {
                 $procurement->po = $nowStr;
             }
@@ -185,7 +459,7 @@ class ProcurementController extends Controller
 
         $procurement->save();
 
-        return redirect()->to('/dashboard')
+        return redirect()->back()
             ->with('success', 'Fase berhasil disetujui (Approved)!');
     }
 
@@ -197,19 +471,19 @@ class ProcurementController extends Controller
     public function rejectPhase(Request $request, $id)
     {
         $procurement = Procurement::findOrFail($id);
-        $currentStatus = $procurement->status;
+        $currentPhase = $procurement->phase;
 
-        if ($currentStatus === Procurement::STATUS_TE) {
-            $procurement->status = Procurement::STATUS_RP;
-        } elseif ($currentStatus === Procurement::STATUS_RETE) {
-            $procurement->status = Procurement::STATUS_TE;
-        } elseif ($currentStatus === Procurement::STATUS_PO) {
-            $procurement->status = Procurement::STATUS_RETE;
+        if ($currentPhase === Procurement::PHASE_TE) {
+            $procurement->phase = Procurement::PHASE_RP;
+        } elseif ($currentPhase === Procurement::PHASE_RETE) {
+            $procurement->phase = Procurement::PHASE_TE;
+        } elseif ($currentPhase === Procurement::PHASE_PO) {
+            $procurement->phase = Procurement::PHASE_RETE;
         }
 
         $procurement->save();
 
-        return redirect()->to('/dashboard')
+        return redirect()->back()
             ->with('success', 'Fase berhasil ditolak (Rejected)!');
     }
 }

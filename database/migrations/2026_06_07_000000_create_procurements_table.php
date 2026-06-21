@@ -13,22 +13,24 @@ return new class extends Migration
     {
         Schema::create('procurements', function (Blueprint $table) {
             $table->id();
-            $table->string('no');
-            $table->string('rp_number')->unique();
-            $table->string('description');
-            $table->string('date_created');
-            $table->string('send_for_approval_general_director')->nullable();
+            $table->string('no')->nullable();
+            $table->string('rp_number')->nullable()->unique();
+            $table->text('description')->nullable();
+            $table->date('date_created')->nullable();
+            $table->date('send_for_approval_general_director')->nullable();
             $table->string('buyer')->nullable();
-            $table->string('te_in')->nullable();
-            $table->string('te_out')->nullable();
-            $table->string('re_te')->nullable();
+            $table->date('te_in')->nullable();
+            $table->date('te_out')->nullable();
+            $table->date('re_te')->nullable();
             $table->string('po')->nullable();
             $table->string('vendor')->nullable();
-            $table->string('delivery')->nullable();
+            $table->date('delivery')->nullable();
             $table->string('so')->nullable();
             $table->string('qc')->nullable();
             $table->string('rr')->nullable();
-            $table->string('status')->nullable();
+            $table->string('status')->nullable()->default('Pending');
+            $table->string('phase')->nullable();
+            $table->date('tanggal_masuk')->nullable();
             $table->timestamps();
         });
     }

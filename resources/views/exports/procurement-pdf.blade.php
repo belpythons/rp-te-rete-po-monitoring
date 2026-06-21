@@ -79,25 +79,20 @@
             border: 1px solid #000;
             font-size: 5.5px;
         }
-        .status-rp {
-            background-color: #E2E8F0;
-            color: #1E293B;
-            border-color: #475569;
+        .status-disetujui {
+            background-color: #DEF7EC;
+            color: #03543F;
+            border-color: #03543F;
         }
-        .status-te {
-            background-color: #3B82F6;
-            color: #ffffff;
-            border-color: #1D4ED8;
+        .status-tidak-disetujui {
+            background-color: #FDE8E8;
+            color: #9B1C1C;
+            border-color: #9B1C1C;
         }
-        .status-rete {
-            background-color: #F97316;
-            color: #ffffff;
-            border-color: #C2410C;
-        }
-        .status-po {
-            background-color: #EC4899;
-            color: #ffffff;
-            border-color: #BE185D;
+        .status-pending {
+            background-color: #FEF08A;
+            color: #713F12;
+            border-color: #713F12;
         }
         .footer {
             margin-top: 20px;
@@ -159,17 +154,14 @@
                     <td class="text-left">{{ $item->vendor ?? '—' }}</td>
                     <td>
                         @switch($item->status)
-                            @case('RP')
-                                <span class="status-badge status-rp">RP</span>
+                            @case('Disetujui')
+                                <span class="status-badge status-disetujui">Disetujui</span>
                                 @break
-                            @case('TE')
-                                <span class="status-badge status-te">TE</span>
+                            @case('Tidak Disetujui')
+                                <span class="status-badge status-tidak-disetujui">Tidak Disetujui</span>
                                 @break
-                            @case('RE-TE')
-                                <span class="status-badge status-rete">RE-TE</span>
-                                @break
-                            @case('PO')
-                                <span class="status-badge status-po">PO</span>
+                            @case('Pending')
+                                <span class="status-badge status-pending">Pending</span>
                                 @break
                             @default
                                 <span class="status-badge" style="background-color: #eee;">{{ $item->status ?? '—' }}</span>

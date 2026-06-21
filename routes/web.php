@@ -29,6 +29,18 @@ Route::middleware(['auth', \App\Http\Middleware\HandleInertiaRequests::class])->
     Route::get('/dashboard', [ProcurementController::class, 'index'])
         ->name('dashboard');
 
+    Route::get('/request-purchasing', [ProcurementController::class, 'requestPurchasing'])
+        ->name('request-purchasing');
+
+    Route::get('/technical-evaluation', [ProcurementController::class, 'technicalEvaluation'])
+        ->name('technical-evaluation');
+
+    Route::get('/re-technical-evaluation', [ProcurementController::class, 'reTechnicalEvaluation'])
+        ->name('re-technical-evaluation');
+
+    Route::get('/purchase-order', [ProcurementController::class, 'purchaseOrder'])
+        ->name('purchase-order');
+
     Route::get('/procurement/create', [ProcurementController::class, 'create'])
         ->name('procurement.create');
 

@@ -2,21 +2,13 @@
 import { ref, computed } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import apexchart from 'vue3-apexcharts';
 
 const props = defineProps({
     procurements:    { type: Object, default: () => ({}) },
-    totalRP:         { type: Number, default: 0 },
-    totalTE:         { type: Number, default: 0 },
     totalRETE:       { type: Number, default: 0 },
-    totalPO:         { type: Number, default: 0 },
-    chartData:       { type: Object, default: () => ({}) },
     availableMonths: { type: Array, default: () => [] },
     filters:         { type: Object, default: () => ({}) },
 });
-
-// Calculate total of all data for general overview
-const totalAll = computed(() => props.totalRP + props.totalTE + props.totalRETE + props.totalPO);
 
 // Reactive Filter states
 const searchQuery = ref(props.filters.search || '');
@@ -24,7 +16,7 @@ const activeMonth = ref(props.filters.month_year || '');
 
 // Apply server-side filters
 function applyFilters() {
-    router.get('/dashboard', {
+    router.get('/re-technical-evaluation', {
         search: searchQuery.value || undefined,
         month_year: activeMonth.value || undefined,
     }, {
@@ -44,10 +36,10 @@ function handleMonthChange() {
 function resetFilters() {
     searchQuery.value = '';
     activeMonth.value = '';
-    router.get('/dashboard');
+    router.get('/re-technical-evaluation');
 }
 
-// Extract paginated array safe check
+// Extract paginated array
 const filteredProcurements = computed(() => {
     if (Array.isArray(props.procurements)) {
         return props.procurements;
@@ -75,7 +67,7 @@ const editForm = useForm({
     qc: '',
     rr: '',
     status: 'Pending',
-    phase: 'RP',
+    phase: 'RE-TE',
 });
 
 function openEditModal(item) {
@@ -97,7 +89,7 @@ function openEditModal(item) {
     editForm.qc = item.qc || '';
     editForm.rr = item.rr || '';
     editForm.status = item.status || 'Pending';
-    editForm.phase = item.phase || 'RP';
+    editForm.phase = item.phase || 'RE-TE';
 
     showEditModal.value = true;
 }
@@ -128,146 +120,51 @@ function submitDelete() {
         }
     });
 }
-
-// ApexCharts configuration
-const chartOptions = computed(() => ({
-    chart: {
-        id: 'procurements-trend',
-        type: 'line',
-        toolbar: { show: false },
-        zoom: { enabled: false }
-    },
-    stroke: {
-        curve: 'smooth',
-        width: 3,
-        colors: ['#2563EB']
-    },
-    markers: {
-        size: 5,
-        colors: ['#2563EB'],
-        strokeColors: '#fff',
-        strokeWidth: 2,
-    },
-    grid: {
-        borderColor: '#F1F5F9',
-    },
-    xaxis: {
-        categories: props.chartData?.categories || [],
-        labels: {
-            style: {
-                colors: '#64748B',
-                fontSize: '11px',
-                fontFamily: 'monospace'
-            }
-        }
-    },
-    yaxis: {
-        labels: {
-            style: {
-                colors: '#64748B',
-                fontSize: '11px',
-                fontFamily: 'monospace'
-            }
-        }
-    },
-    tooltip: {
-        theme: 'light',
-    }
-}));
-
-const chartSeries = computed(() => [
-    {
-        name: 'Jumlah Procurement',
-        data: props.chartData?.series || []
-    }
-]);
 </script>
 
 <template>
-    <AuthenticatedLayout title="Dashboard Monitoring">
-        <!-- Monthly Trend Line Chart -->
-        <section class="bg-white rounded-xl shadow-md border border-slate-100 p-6 mb-8">
-            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">Tren Bulanan Procurement</h3>
-            <div class="h-64">
-                <apexchart height="100%" width="100%" :options="chartOptions" :series="chartSeries"></apexchart>
-            </div>
-        </section>
-
-        <!-- Stats Cards Grid -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-            <!-- Card Semua Data -->
-            <div class="rounded-xl p-5 flex flex-col justify-between h-28 text-white bg-slate-800 shadow-md">
-                <div class="flex justify-between items-center">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Semua Data</span>
-                    <i class="bi bi-folder-fill text-lg opacity-75"></i>
-                </div>
-                <div class="flex justify-between items-baseline mt-2">
-                    <span class="text-xs opacity-75">Total Item</span>
-                    <span class="text-2xl font-bold font-mono">{{ totalAll }}</span>
-                </div>
-            </div>
-
-            <!-- Card RP -->
-            <div class="rounded-xl p-5 flex flex-col justify-between h-28 text-white bg-blue-600 shadow-md">
-                <div class="flex justify-between items-center">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Total RP</span>
-                    <i class="bi bi-file-earmark-text text-lg opacity-75"></i>
-                </div>
-                <div class="flex justify-between items-baseline mt-2">
-                    <span class="text-xs opacity-75">Req Purchasing</span>
-                    <span class="text-2xl font-bold font-mono">{{ totalRP }}</span>
-                </div>
-            </div>
-
-            <!-- Card TE -->
-            <div class="rounded-xl p-5 flex flex-col justify-between h-28 text-white bg-green-500 shadow-md">
-                <div class="flex justify-between items-center">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Total TE</span>
-                    <i class="bi bi-clipboard-check text-lg opacity-75"></i>
-                </div>
-                <div class="flex justify-between items-baseline mt-2">
-                    <span class="text-xs opacity-75">Tech Evaluation</span>
-                    <span class="text-2xl font-bold font-mono">{{ totalTE }}</span>
-                </div>
-            </div>
-
-            <!-- Card RE-TE -->
-            <div class="rounded-xl p-5 flex flex-col justify-between h-28 text-white bg-orange-400 shadow-md">
+    <AuthenticatedLayout title="Re-Technical Evaluation (RE-TE)">
+        <!-- Single Focus Metric Card -->
+        <section class="mb-8">
+            <div class="max-w-xs rounded-xl p-5 text-white bg-orange-400 shadow-md flex flex-col justify-between h-28">
                 <div class="flex justify-between items-center">
                     <span class="text-xs font-semibold uppercase tracking-wider">Total Re-TE</span>
                     <i class="bi bi-arrow-repeat text-lg opacity-75"></i>
                 </div>
                 <div class="flex justify-between items-baseline mt-2">
-                    <span class="text-xs opacity-75">Re-Tech Eval</span>
+                    <span class="text-xs opacity-75">Re-Tech Evaluation</span>
                     <span class="text-2xl font-bold font-mono">{{ totalRETE }}</span>
-                </div>
-            </div>
-
-            <!-- Card PO -->
-            <div class="rounded-xl p-5 flex flex-col justify-between h-28 text-white bg-pink-500 shadow-md">
-                <div class="flex justify-between items-center">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Total PO</span>
-                    <i class="bi bi-bag-check text-lg opacity-75"></i>
-                </div>
-                <div class="flex justify-between items-baseline mt-2">
-                    <span class="text-xs opacity-75">Purchase Order</span>
-                    <span class="text-2xl font-bold font-mono">{{ totalPO }}</span>
                 </div>
             </div>
         </section>
 
         <!-- Solid Neutral Table Wrapper Container -->
         <section class="bg-white border-2 border-black shadow-md overflow-hidden mb-8">
-            <div class="p-6 border-b-2 border-black flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-slate-50">
+            <div class="p-6 border-b-2 border-black flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 bg-slate-50">
                 <div class="flex items-center gap-2">
                     <div class="w-3 h-6 bg-slate-800 rounded-full"></div>
-                    <h3 class="text-lg font-bold text-slate-900">Daftar Rekapitulasi Procurement</h3>
+                    <h3 class="text-lg font-bold text-slate-900">Data Monitoring Re-Technical Evaluation</h3>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    <!-- Export buttons for current phase -->
+                    <div class="flex items-center gap-2">
+                        <a 
+                            :href="`/report/export/excel?phase=RE-TE` + (activeMonth ? `&month_year=${activeMonth}` : '')" 
+                            class="h-10 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-1 shadow-sm decoration-none cursor-pointer"
+                        >
+                            <i class="bi bi-file-earmark-excel"></i> Excel
+                        </a>
+                        <a 
+                            :href="`/report/export/pdf?phase=RE-TE` + (activeMonth ? `&month_year=${activeMonth}` : '')" 
+                            class="h-10 px-3 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-1 shadow-sm decoration-none cursor-pointer"
+                        >
+                            <i class="bi bi-file-earmark-pdf"></i> PDF
+                        </a>
+                    </div>
+
                     <!-- Month & Year Filter Dropdown -->
                     <div class="flex items-center gap-2">
-                        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Bulan & Tahun:</label>
                         <select 
                             v-model="activeMonth" 
                             @change="handleMonthChange" 
@@ -286,8 +183,8 @@ const chartSeries = computed(() => [
                             type="text" 
                             v-model="searchQuery" 
                             @keyup.enter="triggerSearch"
-                            placeholder="Cari kode / deskripsi / status..." 
-                            class="w-full sm:w-60 h-10 px-4 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" 
+                            placeholder="Cari..." 
+                            class="w-40 h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" 
                         />
                         <button 
                             @click="triggerSearch"
@@ -302,14 +199,13 @@ const chartSeries = computed(() => [
                         v-if="searchQuery || activeMonth"
                         @click="resetFilters"
                         class="h-10 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition"
-                        title="Reset Filter"
                     >
                         Reset
                     </button>
                 </div>
             </div>
 
-            <!-- Data Table with large base font size -->
+            <!-- Data Table with base font size -->
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
@@ -358,15 +254,12 @@ const chartSeries = computed(() => [
                             </td>
                             <td class="p-4 text-base">
                                 <div class="flex items-center justify-center gap-2">
-                                    <!-- Edit Button -->
                                     <button 
                                         @click="openEditModal(item)" 
                                         class="h-8 px-3 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-semibold text-xs rounded-lg transition flex items-center gap-1 cursor-pointer"
                                     >
                                         <i class="bi bi-pencil-square"></i> Edit
                                     </button>
- 
-                                    <!-- Delete Button -->
                                     <button 
                                         @click="confirmDelete(item.id)" 
                                         class="h-8 px-3 bg-red-500 hover:bg-red-600 text-white font-semibold text-xs rounded-lg transition flex items-center gap-1 cursor-pointer"
@@ -414,19 +307,17 @@ const chartSeries = computed(() => [
             <div v-if="showEditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
                 <div class="bg-white rounded-2xl border border-slate-100 w-full max-w-[800px] max-h-[90vh] overflow-hidden shadow-2xl flex flex-col relative">
                     <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                        <h3 class="text-lg font-bold text-slate-800">Edit Data Procurement</h3>
+                        <h3 class="text-lg font-bold text-slate-800">Edit Data Re-Technical Evaluation</h3>
                         <button @click="showEditModal = false" class="text-slate-400 hover:text-slate-600 text-xl font-bold">×</button>
                     </div>
 
                     <form @submit.prevent="submitUpdate" class="p-6 overflow-y-auto space-y-6 flex-grow text-left">
-                        <!-- Global Validation Errors -->
                         <div v-if="Object.keys(editForm.errors).length > 0" class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg text-xs space-y-1 font-semibold">
                             <div v-for="(err, key) in editForm.errors" :key="key">
                                 • {{ err }}
                             </div>
                         </div>
 
-                        <!-- 2 Column Grid for Form Fields -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- Phase Dropdown -->
                             <div>
@@ -489,52 +380,10 @@ const chartSeries = computed(() => [
                                 <input type="text" v-model="editForm.buyer" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
-                            <!-- TE In -->
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">TE In Date</label>
-                                <input type="text" v-model="editForm.te_in" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
-                            </div>
-
-                            <!-- TE Out -->
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">TE Out Date</label>
-                                <input type="text" v-model="editForm.te_out" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
-                            </div>
-
                             <!-- RE-TE -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">RE-TE Date</label>
                                 <input type="text" v-model="editForm.re_te" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
-                            </div>
-
-                            <!-- PO -->
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">PO Date/Number</label>
-                                <input type="text" v-model="editForm.po" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
-                            </div>
-
-                            <!-- SO -->
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">SO Date/Number</label>
-                                <input type="text" v-model="editForm.so" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
-                            </div>
-
-                            <!-- QC -->
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">QC Date/Result</label>
-                                <input type="text" v-model="editForm.qc" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
-                            </div>
-
-                            <!-- Delivery -->
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Delivery Date</label>
-                                <input type="text" v-model="editForm.delivery" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
-                            </div>
-
-                            <!-- RR -->
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">RR Date</label>
-                                <input type="text" v-model="editForm.rr" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- Vendor -->
