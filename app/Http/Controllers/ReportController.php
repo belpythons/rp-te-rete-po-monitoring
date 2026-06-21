@@ -19,29 +19,15 @@ class ReportController extends Controller
      * Report index page — rendered via Inertia (Vue).
      * Passes procurements data and import history to the frontend.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $procurements = Procurement::orderBy('id', 'desc')
-            ->get()
-            ->map(fn (Procurement $p) => [
-                'id'                                 => $p->id,
-                'no'                                 => $p->no,
-                'rp_number'                          => $p->rp_number,
-                'description'                        => $p->description,
-                'date_created'                       => $p->date_created,
-                'send_for_approval_general_director' => $p->send_for_approval_general_director,
-                'buyer'                              => $p->buyer,
-                'te_in'                              => $p->te_in,
-                'te_out'                             => $p->te_out,
-                're_te'                              => $p->re_te,
-                'po'                                 => $p->po,
-                'vendor'                             => $p->vendor,
-                'delivery'                           => $p->delivery,
-                'so'                                 => $p->so,
-                'qc'                                 => $p->qc,
-                'rr'                                 => $p->rr,
-                'status'                             => $p->status,
-            ]);
+        $query = Procurement::orderBy('tanggal_masuk', 'asc');
+
+        if ($request->filled('month_year')) {
+            $query->whereRaw("DATE_FORMAT(tanggal_masuk, '%Y-%m') = ?", [$request->month_year]);
+        }
+
+        $procurements = $query->paginate(15)->withQueryString();
 
         $importLogs = ImportLog::where('user_id', auth()->id())
             ->orderBy('id', 'desc')
@@ -59,19 +45,36 @@ class ReportController extends Controller
                 'created_at'     => $log->created_at->format('d M Y H:i'),
             ]);
 
+        // Available Months filter dropdown options
+        $availableMonths = Procurement::whereNotNull('tanggal_masuk')
+            ->orderBy('tanggal_masuk', 'desc')
+            ->pluck('tanggal_masuk')
+            ->map(function ($date) {
+                $carbon = \Carbon\Carbon::parse($date);
+                return [
+                    'value' => $carbon->format('Y-m'),
+                    'label' => $carbon->translatedFormat('F Y'),
+                ];
+            })
+            ->unique('value')
+            ->values()
+            ->toArray();
+
         // Summary counts for stats cards
         $stats = [
             'total' => Procurement::count(),
-            'rp'    => Procurement::where('status', 'RP')->count(),
-            'te'    => Procurement::where('status', 'TE')->count(),
-            'rete'  => Procurement::where('status', 'RE-TE')->count(),
-            'po'    => Procurement::where('status', 'PO')->count(),
+            'rp'    => Procurement::where('phase', 'RP')->count(),
+            'te'    => Procurement::where('phase', 'TE')->count(),
+            'rete'  => Procurement::where('phase', 'RE-TE')->count(),
+            'po'    => Procurement::where('phase', 'PO')->count(),
         ];
 
         return Inertia::render('Report/Index', [
-            'procurements' => $procurements,
-            'importLogs'   => $importLogs,
-            'stats'        => $stats,
+            'procurements'    => $procurements,
+            'importLogs'      => $importLogs,
+            'stats'           => $stats,
+            'availableMonths' => $availableMonths,
+            'filters'         => $request->only(['month_year']),
         ]);
     }
 
@@ -129,11 +132,13 @@ class ReportController extends Controller
     /**
      * Export all procurement data as Excel file.
      */
-    public function exportExcel()
+    public function exportExcel(Request $request)
     {
+        $monthYear = $request->query('month_year');
+        $phase = $request->query('phase');
         return Excel::download(
-            new ProcurementExport(),
-            'laporan_procurement_' . now()->format('Y-m-d_His') . '.xlsx'
+            new ProcurementExport($monthYear, $phase),
+            'laporan_procurement_' . ($phase ? strtolower($phase) . '_' : '') . ($monthYear ?: now()->format('Y-m')) . '_' . now()->format('His') . '.xlsx'
         );
     }
 
@@ -141,9 +146,18 @@ class ReportController extends Controller
      * Export all procurement data as PDF.
      * Paper: Folio/F4 Landscape — ensures wide table is not clipped.
      */
-    public function exportPdf()
+    public function exportPdf(Request $request)
     {
-        $procurements = Procurement::orderBy('id', 'desc')->get();
+        $monthYear = $request->query('month_year');
+        $phase = $request->query('phase');
+        $query = Procurement::orderBy('tanggal_masuk', 'asc');
+        if ($monthYear) {
+            $query->whereRaw("DATE_FORMAT(tanggal_masuk, '%Y-%m') = ?", [$monthYear]);
+        }
+        if ($phase) {
+            $query->where('phase', $phase);
+        }
+        $procurements = $query->get();
 
         $pdf = Pdf::loadView('exports.procurement-pdf', [
             'procurements' => $procurements,
@@ -154,7 +168,7 @@ class ReportController extends Controller
         $pdf->setPaper([0, 0, 612.00, 936.00], 'landscape');
 
         return $pdf->download(
-            'laporan_procurement_' . now()->format('Y-m-d_His') . '.pdf'
+            'laporan_procurement_' . ($phase ? strtolower($phase) . '_' : '') . ($monthYear ?: now()->format('Y-m')) . '_' . now()->format('His') . '.pdf'
         );
     }
 
