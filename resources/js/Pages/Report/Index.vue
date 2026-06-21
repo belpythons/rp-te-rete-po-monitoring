@@ -4,9 +4,11 @@ import { useForm, usePage, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
 const props = defineProps({
-    procurements: { type: Array, default: () => [] },
-    importLogs:   { type: Array, default: () => [] },
-    stats:        { type: Object, default: () => ({}) },
+    procurements:    { type: Object, default: () => ({}) },
+    importLogs:      { type: Array, default: () => [] },
+    stats:           { type: Object, default: () => ({}) },
+    availableMonths: { type: Array, default: () => [] },
+    filters:         { type: Object, default: () => ({}) },
 });
 
 const page = usePage();
@@ -22,16 +24,36 @@ const dragOver      = ref(false);
 const importForm    = useForm({ file: null });
 const fileInputRef  = ref(null);
 const selectedFileName = ref('');
-const searchQuery   = ref('');
+const activeMonth = ref(props.filters.month_year || '');
 
+// Backend filters month_year change handler
+function handleMonthChange() {
+    router.get('/report', {
+        month_year: activeMonth.value || undefined,
+    }, {
+        preserveState: true,
+        replace: true
+    });
+}
+
+// Client-side quick filter on active paginated records
+const searchQuery = ref('');
 const filteredProcurements = computed(() => {
-    if (!searchQuery.value) return props.procurements;
+    let data = [];
+    if (Array.isArray(props.procurements)) {
+        data = props.procurements;
+    } else {
+        data = props.procurements.data || [];
+    }
+    
+    if (!searchQuery.value) return data;
     const q = searchQuery.value.toLowerCase();
-    return props.procurements.filter(p =>
+    return data.filter(p =>
         (p.rp_number && p.rp_number.toLowerCase().includes(q)) ||
         (p.description && p.description.toLowerCase().includes(q)) ||
         (p.vendor && p.vendor.toLowerCase().includes(q)) ||
-        (p.status && p.status.toLowerCase().includes(q))
+        (p.status && p.status.toLowerCase().includes(q)) ||
+        (p.phase && p.phase.toLowerCase().includes(q))
     );
 });
 
@@ -131,17 +153,6 @@ function stopListening() {
 
 onUnmounted(() => stopListening());
 
-// Helper for status badge styling inside procurement table
-const statusConfig = {
-    'RP':    { cls: 'bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider', label: 'Request Purchasing' },
-    'TE':    { cls: 'bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider', label: 'Technical Evaluation' },
-    'RE-TE': { cls: 'bg-orange-50 text-orange-700 border border-orange-200 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider', label: 'Re-Technical Evaluation' },
-    'PO':    { cls: 'bg-pink-50 text-pink-700 border border-pink-200 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider', label: 'Purchase Order' },
-};
-function getStatus(status) { 
-    return statusConfig[status] || { cls: 'bg-gray-500 text-white border', label: status }; 
-}
-
 // Calculate progress percentage for import logs
 function getLogProgress(log) {
     if (!log.total_rows) return 0;
@@ -168,24 +179,39 @@ function getLogProgress(log) {
                         <p class="text-xs text-slate-500 mb-6 leading-relaxed">
                             Unduh rangkuman data monitoring dalam format Excel atau PDF Folio/F4 Landscape.
                         </p>
+
+                        <!-- Bulan & Tahun Filter Dropdown (Above PDF/Excel buttons) -->
+                        <div class="mb-5">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Bulan & Tahun Laporan:</label>
+                            <select 
+                                v-model="activeMonth" 
+                                @change="handleMonthChange" 
+                                class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white"
+                            >
+                                <option value="">Semua Bulan</option>
+                                <option v-for="m in availableMonths" :key="m.value" :value="m.value">
+                                    {{ m.label }}
+                                </option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="space-y-3">
                         <a 
-                            href="/report/export/excel" 
-                            class="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-all decoration-none flex items-center justify-center gap-2 cursor-pointer shadow-sm text-sm"
+                            :href="activeMonth ? `/report/export/excel?month_year=${activeMonth}` : '/report/export/excel'" 
+                            class="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-all decoration-none flex items-center justify-center gap-2 cursor-pointer shadow-sm text-sm font-sans"
                         >
                             <i class="bi bi-file-earmark-excel"></i> Export Excel
                         </a>
                         <a 
-                            href="/report/export/pdf" 
-                            class="w-full h-11 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all decoration-none flex items-center justify-center gap-2 cursor-pointer shadow-sm text-sm"
+                            :href="activeMonth ? `/report/export/pdf?month_year=${activeMonth}` : '/report/export/pdf'" 
+                            class="w-full h-11 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all decoration-none flex items-center justify-center gap-2 cursor-pointer shadow-sm text-sm font-sans"
                         >
                             <i class="bi bi-file-earmark-pdf"></i> Export PDF
                         </a>
                         <a 
                             href="/report/template" 
-                            class="w-full h-11 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition decoration-none flex items-center justify-center gap-2 text-sm"
+                            class="w-full h-11 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition decoration-none flex items-center justify-center gap-2 text-sm font-sans"
                         >
                             <i class="bi bi-download"></i> Template Excel
                         </a>
@@ -389,55 +415,82 @@ function getLogProgress(log) {
                 </div>
             </section>
 
-            <!-- DATA TABLE (Procurement View) -->
-            <section class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <!-- DATA TABLE (Procurement View - Solid black border, white bg, shadow-md, text-base font) -->
+            <section class="bg-white border-2 border-black shadow-md overflow-hidden">
+                <div class="p-6 border-b-2 border-black flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-slate-50">
                     <div class="flex items-center gap-2">
-                        <div class="w-3 h-6 bg-blue-600 rounded-full"></div>
-                        <h3 class="text-base font-bold text-slate-800">
-                            Daftar Procurement 
-                            <span class="text-xs font-mono font-normal text-slate-400 ml-1">({{ filteredProcurements.length }} records)</span>
+                        <div class="w-3 h-6 bg-slate-800 rounded-full"></div>
+                        <h3 class="text-lg font-bold text-slate-900">
+                            Daftar Laporan Procurement 
+                            <span class="text-xs font-mono font-normal text-slate-500 ml-1">({{ filteredProcurements.length }} records)</span>
                         </h3>
                     </div>
                     <input 
                         v-model="searchQuery" 
                         type="text" 
                         placeholder="Cari kode / deskripsi / status..."
-                        class="h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-xs w-full sm:w-64" 
+                        class="h-10 px-3 rounded-lg border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-xs w-full sm:w-64 bg-white" 
                     />
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-slate-800 text-white border-b border-slate-700">
-                                <th class="p-4 text-center text-xs font-semibold uppercase tracking-wider w-16">No</th>
-                                <th class="p-4 text-center text-xs font-semibold uppercase tracking-wider w-36">Kode (RP)</th>
-                                <th class="p-4 text-xs font-semibold uppercase tracking-wider">Deskripsi Barang</th>
-                                <th class="p-4 text-center text-xs font-semibold uppercase tracking-wider w-40">Tanggal Created</th>
-                                <th class="p-4 text-center text-xs font-semibold uppercase tracking-wider w-40">Vendor</th>
-                                <th class="p-4 text-center text-xs font-semibold uppercase tracking-wider w-36">Status</th>
+                            <tr class="bg-slate-800 text-white border-b-2 border-black">
+                                <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-16">No</th>
+                                <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">Kode (RP)</th>
+                                <th class="p-4 text-base font-bold uppercase tracking-wider">Deskripsi Barang</th>
+                                <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-40">Tanggal Created</th>
+                                <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-40">Vendor</th>
+                                <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-28">Fase</th>
+                                <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">Status</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100 text-slate-700 text-sm">
+                        <tbody class="divide-y-2 divide-slate-200 text-slate-900 text-base">
                             <tr v-for="item in filteredProcurements" :key="item.id" class="hover:bg-slate-50/50 transition">
-                                <td class="p-4 text-center font-mono text-xs">{{ item.no }}</td>
-                                <td class="p-4 text-center font-mono font-semibold text-slate-900 select-all">{{ item.rp_number }}</td>
-                                <td class="p-4 font-medium">{{ item.description }}</td>
-                                <td class="p-4 text-center font-mono text-xs text-slate-500">{{ item.date_created || '—' }}</td>
-                                <td class="p-4 text-center font-mono text-xs text-slate-500">{{ item.vendor || '—' }}</td>
-                                <td class="p-4 text-center">
-                                    <span :class="getStatus(item.status).cls" class="inline-block text-[11px] font-bold uppercase tracking-wider py-1 px-3">
-                                        {{ getStatus(item.status).label }}
-                                    </span>
+                                <td class="p-4 text-center font-mono text-base">{{ item.no }}</td>
+                                <td class="p-4 text-center font-mono font-semibold text-slate-900 select-all text-base">{{ item.rp_number }}</td>
+                                <td class="p-4 font-medium text-base">{{ item.description }}</td>
+                                <td class="p-4 text-center font-mono text-slate-600 text-base">{{ item.date_created || '—' }}</td>
+                                <td class="p-4 text-center font-mono text-slate-600 text-base">{{ item.vendor || '—' }}</td>
+                                <td class="p-4 text-center text-base">
+                                    <span class="inline-block bg-slate-100 text-slate-800 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">{{ item.phase }}</span>
+                                </td>
+                                <td class="p-4 text-center text-base">
+                                    <span v-if="item.status === 'Disetujui'" class="inline-block bg-green-50 text-green-700 border border-green-200 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">Disetujui</span>
+                                    <span v-else-if="item.status === 'Tidak Disetujui'" class="inline-block bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">Tidak Disetujui</span>
+                                    <span v-else class="inline-block bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">Pending</span>
                                 </td>
                             </tr>
                             <tr v-if="filteredProcurements.length === 0">
-                                <td colspan="6" class="p-8 text-center text-slate-400 font-mono text-sm">
+                                <td colspan="7" class="p-8 text-center text-slate-400 font-mono text-base">
                                     Belum ada data procurement.
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Server-Side Pagination Controls -->
+                <div v-if="procurements.links && procurements.links.length > 3" class="px-5 py-4 bg-white border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="text-xs text-slate-500 font-mono">
+                        Menampilkan halaman {{ procurements.current_page }} dari {{ procurements.last_page }} (Total: {{ procurements.total }} data)
+                    </div>
+                    <div class="flex items-center gap-1 flex-wrap">
+                        <a
+                            v-for="(link, index) in procurements.links"
+                            :key="index"
+                            :href="link.url || '#'"
+                            class="px-3 py-1.5 rounded-lg border text-xs font-semibold font-mono transition duration-150 decoration-none"
+                            :class="[
+                                link.active 
+                                    ? 'bg-blue-600 border-blue-600 text-white shadow-sm' 
+                                    : link.url 
+                                        ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50' 
+                                        : 'bg-white border-slate-100 text-slate-300 cursor-not-allowed'
+                            ]"
+                            v-html="link.label"
+                        ></a>
+                    </div>
                 </div>
             </section>
 

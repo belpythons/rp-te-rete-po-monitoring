@@ -14,20 +14,28 @@ const user = computed(() => page.props.auth?.user);
 
 const navItems = computed(() => [
     { href: '/dashboard', label: 'Dashboard', icon: 'bi bi-speedometer2' },
-    { href: '/dashboard?status=RP', label: 'Request Purchasing', icon: 'bi bi-file-earmark-text' },
-    { href: '/dashboard?status=TE', label: 'Technical Evaluation', icon: 'bi bi-clipboard-check' },
-    { href: '/dashboard?status=RE-TE', label: 'Re-Technical Evaluation', icon: 'bi bi-arrow-repeat' },
-    { href: '/dashboard?status=PO', label: 'Purchase Order', icon: 'bi bi-bag-check' },
+    { href: '/request-purchasing', label: 'Request Purchasing', icon: 'bi bi-file-earmark-text' },
+    { href: '/technical-evaluation', label: 'Technical Evaluation', icon: 'bi bi-clipboard-check' },
+    { href: '/re-technical-evaluation', label: 'Re-Technical Evaluation', icon: 'bi bi-arrow-repeat' },
+    { href: '/purchase-order', label: 'Purchase Order', icon: 'bi bi-bag-check' },
     { href: '/report', label: 'Laporan', icon: 'bi bi-bar-chart-fill' },
 ]);
 
 const isActive = (item) => {
     if (item.href === '/dashboard') {
-        return page.component === 'Dashboard/Index' && !page.url.includes('status=');
+        return page.component === 'Dashboard/Index';
     }
-    if (item.href.includes('status=')) {
-        const status = item.href.split('status=')[1];
-        return page.component === 'Dashboard/Index' && page.url.includes(`status=${status}`);
+    if (item.href === '/request-purchasing') {
+        return page.component === 'RequestPurchasing/Index';
+    }
+    if (item.href === '/technical-evaluation') {
+        return page.component === 'TechnicalEvaluation/Index';
+    }
+    if (item.href === '/re-technical-evaluation') {
+        return page.component === 'ReTechnicalEvaluation/Index';
+    }
+    if (item.href === '/purchase-order') {
+        return page.component === 'PurchaseOrder/Index';
     }
     if (item.href.startsWith('/report')) {
         return page.component === 'Report/Index';
@@ -69,12 +77,11 @@ watch(
 
 <template>
     <div class="min-h-screen text-slate-800 font-sans antialiased flex flex-col md:flex-row relative">
-        <!-- Main Background Image with Translucent White Overlay -->
+        <!-- Main Background Image -->
         <div 
             class="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
             style="background-image: url('/images/kmi1.jpg');"
         ></div>
-        <div class="absolute inset-0 z-10 bg-white/90 backdrop-blur-[2px]"></div>
 
         <!-- ═══════════════════════════════════════════ -->
         <!-- SIDEBAR - Slate-800 background             -->
@@ -132,13 +139,10 @@ watch(
         <!-- ═══════════════════════════════════════════ -->
         <div class="flex-grow md:ml-72 p-6 md:p-8 flex flex-col min-h-screen z-20 relative">
             <!-- Topbar Header -->
-            <header class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 md:p-5 mb-8 flex justify-between items-center">
-                <h1 class="text-base md:text-lg font-bold text-slate-800">
+            <header class="mb-8">
+                <h1 class="text-3xl font-bold text-slate-900 drop-shadow-sm">
                     Selamat Datang, Admin
                 </h1>
-                <span class="bg-blue-50 text-blue-700 text-xs font-mono px-3 py-1 rounded-full font-semibold border border-blue-100">
-                    SYSTEM V2.0
-                </span>
             </header>
 
             <!-- Main view slot -->

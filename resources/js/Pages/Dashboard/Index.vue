@@ -2,45 +2,57 @@
 import { ref, computed } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import apexchart from 'vue3-apexcharts';
 
 const props = defineProps({
-    procurements: { type: Array, default: () => [] },
-    totalRP:      { type: Number, default: 0 },
-    totalTE:      { type: Number, default: 0 },
-    totalRETE:    { type: Number, default: 0 },
-    totalPO:      { type: Number, default: 0 },
-    filters:      { type: Object, default: () => ({}) },
+    procurements:    { type: Object, default: () => ({}) },
+    totalRP:         { type: Number, default: 0 },
+    totalTE:         { type: Number, default: 0 },
+    totalRETE:       { type: Number, default: 0 },
+    totalPO:         { type: Number, default: 0 },
+    chartData:       { type: Object, default: () => ({}) },
+    availableMonths: { type: Array, default: () => [] },
+    filters:         { type: Object, default: () => ({}) },
 });
 
-// Calculate total of all data
+// Calculate total of all data for general overview
 const totalAll = computed(() => props.totalRP + props.totalTE + props.totalRETE + props.totalPO);
 
 // Reactive Filter states
 const searchQuery = ref(props.filters.search || '');
-const activeSearch = ref(props.filters.search || '');
-const statusFilter = ref(props.filters.status || null);
+const activeMonth = ref(props.filters.month_year || '');
 
-// Filter trigger
-function triggerSearch() {
-    activeSearch.value = searchQuery.value;
+// Apply server-side filters
+function applyFilters() {
+    router.get('/dashboard', {
+        search: searchQuery.value || undefined,
+        month_year: activeMonth.value || undefined,
+    }, {
+        preserveState: true,
+        replace: true
+    });
 }
 
-// Client-side filtering
+function triggerSearch() {
+    applyFilters();
+}
+
+function handleMonthChange() {
+    applyFilters();
+}
+
+function resetFilters() {
+    searchQuery.value = '';
+    activeMonth.value = '';
+    router.get('/dashboard');
+}
+
+// Extract paginated array safe check
 const filteredProcurements = computed(() => {
-    let data = props.procurements;
-    if (statusFilter.value) {
-        data = data.filter(p => p.status === statusFilter.value);
+    if (Array.isArray(props.procurements)) {
+        return props.procurements;
     }
-    if (activeSearch.value) {
-        const q = activeSearch.value.toLowerCase();
-        data = data.filter(p =>
-            (p.rp_number && p.rp_number.toLowerCase().includes(q)) ||
-            (p.description && p.description.toLowerCase().includes(q)) ||
-            (p.vendor && p.vendor.toLowerCase().includes(q)) ||
-            (p.status && p.status.toLowerCase().includes(q))
-        );
-    }
-    return data;
+    return props.procurements.data || [];
 });
 
 // Edit Modal state
@@ -62,7 +74,8 @@ const editForm = useForm({
     so: '',
     qc: '',
     rr: '',
-    status: 'RP',
+    status: 'Pending',
+    phase: 'RP',
 });
 
 function openEditModal(item) {
@@ -83,7 +96,8 @@ function openEditModal(item) {
     editForm.so = item.so || '';
     editForm.qc = item.qc || '';
     editForm.rr = item.rr || '';
-    editForm.status = item.status || 'RP';
+    editForm.status = item.status || 'Pending';
+    editForm.phase = item.phase || 'RP';
 
     showEditModal.value = true;
 }
@@ -115,26 +129,74 @@ function submitDelete() {
     });
 }
 
-// Toggle status filter from cards
-function toggleStatusFilter(status) {
-    if (statusFilter.value === status) {
-        statusFilter.value = null;
-    } else {
-        statusFilter.value = status;
+// ApexCharts configuration
+const chartOptions = computed(() => ({
+    chart: {
+        id: 'procurements-trend',
+        type: 'line',
+        toolbar: { show: false },
+        zoom: { enabled: false }
+    },
+    stroke: {
+        curve: 'smooth',
+        width: 3,
+        colors: ['#2563EB']
+    },
+    markers: {
+        size: 5,
+        colors: ['#2563EB'],
+        strokeColors: '#fff',
+        strokeWidth: 2,
+    },
+    grid: {
+        borderColor: '#F1F5F9',
+    },
+    xaxis: {
+        categories: props.chartData?.categories || [],
+        labels: {
+            style: {
+                colors: '#64748B',
+                fontSize: '11px',
+                fontFamily: 'monospace'
+            }
+        }
+    },
+    yaxis: {
+        labels: {
+            style: {
+                colors: '#64748B',
+                fontSize: '11px',
+                fontFamily: 'monospace'
+            }
+        }
+    },
+    tooltip: {
+        theme: 'light',
     }
-}
+}));
+
+const chartSeries = computed(() => [
+    {
+        name: 'Jumlah Procurement',
+        data: props.chartData?.series || []
+    }
+]);
 </script>
 
 <template>
     <AuthenticatedLayout title="Dashboard Monitoring">
-        <!-- Stats Cards: 5 rounded-lg cards with light shadow-md -->
+        <!-- Monthly Trend Line Chart -->
+        <section class="bg-white rounded-xl shadow-md border border-slate-100 p-6 mb-8">
+            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-4">Tren Bulanan Procurement</h3>
+            <div class="h-64">
+                <apexchart height="100%" width="100%" :options="chartOptions" :series="chartSeries"></apexchart>
+            </div>
+        </section>
+
+        <!-- Stats Cards Grid -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             <!-- Card Semua Data -->
-            <div 
-                @click="statusFilter = null"
-                class="rounded-xl p-5 cursor-pointer flex flex-col justify-between h-28 transition-all duration-150 shadow-md hover:shadow-lg text-white"
-                :class="statusFilter === null ? 'bg-slate-900 ring-4 ring-slate-400' : 'bg-slate-800'"
-            >
+            <div class="rounded-xl p-5 flex flex-col justify-between h-28 text-white bg-slate-800 shadow-md">
                 <div class="flex justify-between items-center">
                     <span class="text-xs font-semibold uppercase tracking-wider">Semua Data</span>
                     <i class="bi bi-folder-fill text-lg opacity-75"></i>
@@ -146,11 +208,7 @@ function toggleStatusFilter(status) {
             </div>
 
             <!-- Card RP -->
-            <div 
-                @click="toggleStatusFilter('RP')"
-                class="rounded-xl p-5 cursor-pointer flex flex-col justify-between h-28 transition-all duration-150 shadow-md hover:shadow-lg text-white"
-                :class="statusFilter === 'RP' ? 'bg-blue-700 ring-4 ring-blue-300' : 'bg-blue-600'"
-            >
+            <div class="rounded-xl p-5 flex flex-col justify-between h-28 text-white bg-blue-600 shadow-md">
                 <div class="flex justify-between items-center">
                     <span class="text-xs font-semibold uppercase tracking-wider">Total RP</span>
                     <i class="bi bi-file-earmark-text text-lg opacity-75"></i>
@@ -162,11 +220,7 @@ function toggleStatusFilter(status) {
             </div>
 
             <!-- Card TE -->
-            <div 
-                @click="toggleStatusFilter('TE')"
-                class="rounded-xl p-5 cursor-pointer flex flex-col justify-between h-28 transition-all duration-150 shadow-md hover:shadow-lg text-white"
-                :class="statusFilter === 'TE' ? 'bg-green-600 ring-4 ring-green-300' : 'bg-green-500'"
-            >
+            <div class="rounded-xl p-5 flex flex-col justify-between h-28 text-white bg-green-500 shadow-md">
                 <div class="flex justify-between items-center">
                     <span class="text-xs font-semibold uppercase tracking-wider">Total TE</span>
                     <i class="bi bi-clipboard-check text-lg opacity-75"></i>
@@ -178,11 +232,7 @@ function toggleStatusFilter(status) {
             </div>
 
             <!-- Card RE-TE -->
-            <div 
-                @click="toggleStatusFilter('RE-TE')"
-                class="rounded-xl p-5 cursor-pointer flex flex-col justify-between h-28 transition-all duration-150 shadow-md hover:shadow-lg text-white"
-                :class="statusFilter === 'RE-TE' ? 'bg-orange-500 ring-4 ring-orange-300' : 'bg-orange-400'"
-            >
+            <div class="rounded-xl p-5 flex flex-col justify-between h-28 text-white bg-orange-400 shadow-md">
                 <div class="flex justify-between items-center">
                     <span class="text-xs font-semibold uppercase tracking-wider">Total Re-TE</span>
                     <i class="bi bi-arrow-repeat text-lg opacity-75"></i>
@@ -194,11 +244,7 @@ function toggleStatusFilter(status) {
             </div>
 
             <!-- Card PO -->
-            <div 
-                @click="toggleStatusFilter('PO')"
-                class="rounded-xl p-5 cursor-pointer flex flex-col justify-between h-28 transition-all duration-150 shadow-md hover:shadow-lg text-white"
-                :class="statusFilter === 'PO' ? 'bg-pink-600 ring-4 ring-pink-300' : 'bg-pink-500'"
-            >
+            <div class="rounded-xl p-5 flex flex-col justify-between h-28 text-white bg-pink-500 shadow-md">
                 <div class="flex justify-between items-center">
                     <span class="text-xs font-semibold uppercase tracking-wider">Total PO</span>
                     <i class="bi bi-bag-check text-lg opacity-75"></i>
@@ -210,25 +256,38 @@ function toggleStatusFilter(status) {
             </div>
         </section>
 
-        <!-- Controls (Search & Add Button) -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-100 p-5 mb-6">
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <!-- Solid Neutral Table Wrapper Container -->
+        <section class="bg-white border-2 border-black shadow-md overflow-hidden mb-8">
+            <div class="p-6 border-b-2 border-black flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-slate-50">
                 <div class="flex items-center gap-2">
-                    <div class="w-3 h-6 bg-blue-600 rounded-full"></div>
-                    <h3 class="text-base font-bold text-slate-800">Daftar Procurement</h3>
-                    <span v-if="statusFilter" class="bg-blue-50 text-blue-700 text-xs px-2.5 py-0.5 rounded-full font-semibold border border-blue-100 uppercase">
-                        Filter: {{ statusFilter }}
-                    </span>
+                    <div class="w-3 h-6 bg-slate-800 rounded-full"></div>
+                    <h3 class="text-lg font-bold text-slate-900">Daftar Rekapitulasi Procurement</h3>
                 </div>
-                <div class="flex items-center gap-3 w-full sm:w-auto">
+
+                <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                    <!-- Month & Year Filter Dropdown -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Bulan & Tahun:</label>
+                        <select 
+                            v-model="activeMonth" 
+                            @change="handleMonthChange" 
+                            class="h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white"
+                        >
+                            <option value="">Semua Bulan</option>
+                            <option v-for="m in availableMonths" :key="m.value" :value="m.value">
+                                {{ m.label }}
+                            </option>
+                        </select>
+                    </div>
+
                     <!-- Search Input & Cari Button -->
-                    <div class="flex w-full sm:w-auto gap-2">
+                    <div class="flex gap-2">
                         <input 
                             type="text" 
                             v-model="searchQuery" 
                             @keyup.enter="triggerSearch"
-                            placeholder="Cari kode / deskripsi..." 
-                            class="w-full sm:w-60 h-10 px-4 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" 
+                            placeholder="Cari kode / deskripsi / status..." 
+                            class="w-full sm:w-60 h-10 px-4 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" 
                         />
                         <button 
                             @click="triggerSearch"
@@ -238,54 +297,66 @@ function toggleStatusFilter(status) {
                         </button>
                     </div>
 
-                    <!-- Clear filter icon -->
+                    <!-- Reset Filters Button -->
                     <button 
-                        v-if="statusFilter || searchQuery || activeSearch"
-                        @click="statusFilter = null; searchQuery = ''; activeSearch = '';"
+                        v-if="searchQuery || activeMonth"
+                        @click="resetFilters"
                         class="h-10 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium transition"
                         title="Reset Filter"
                     >
                         Reset
                     </button>
-
-                    <!-- Add Button -->
-                    <a 
-                        href="/procurement/create" 
-                        class="h-10 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg flex items-center justify-center gap-2 transition text-sm whitespace-nowrap decoration-none"
-                    >
-                        <i class="bi bi-plus-lg"></i> Tambah Pengadaan
-                    </a>
                 </div>
             </div>
-        </section>
 
-        <!-- Data Table -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-8">
+            <!-- Data Table with large base font size -->
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="bg-slate-800 text-white border-b border-slate-700">
-                            <th class="p-4 text-center text-xs font-semibold uppercase tracking-wider w-16">No</th>
-                            <th class="p-4 text-center text-xs font-semibold uppercase tracking-wider w-36">Kode (RP)</th>
-                            <th class="p-4 text-xs font-semibold uppercase tracking-wider">Deskripsi Barang</th>
-                            <th class="p-4 text-center text-xs font-semibold uppercase tracking-wider w-28">Status</th>
-                            <th class="p-4 text-center text-xs font-semibold uppercase tracking-wider w-40">Tanggal Created</th>
-                            <th class="p-4 text-center text-xs font-semibold uppercase tracking-wider w-44">Aksi</th>
+                        <tr class="bg-slate-800 text-white border-b-2 border-black whitespace-nowrap">
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-16">No</th>
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-40">Kode (RP)</th>
+                            <th class="p-4 text-base font-bold uppercase tracking-wider min-w-[320px]">Deskripsi Barang</th>
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">Date Created</th>
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">Send Gen Dir</th>
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-28">Buyer</th>
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">TE In</th>
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">TE Out</th>
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">Re-TE</th>
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">PO</th>
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-48">Vendor</th>
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">Delivery</th>
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">SO</th>
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">QC</th>
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">RR</th>
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">Status</th>
+                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-44">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 text-slate-700 text-sm">
-                        <tr v-for="item in filteredProcurements" :key="item.id" class="hover:bg-slate-50/50 transition">
-                            <td class="p-4 text-center font-mono text-xs">{{ item.no }}</td>
-                            <td class="p-4 text-center font-mono font-semibold text-slate-900 select-all">{{ item.rp_number }}</td>
-                            <td class="p-4 font-medium">{{ item.description }}</td>
-                            <td class="p-4 text-center">
-                                <span v-if="item.status === 'RP'" class="inline-block bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">RP</span>
-                                <span v-else-if="item.status === 'TE'" class="inline-block bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">TE</span>
-                                <span v-else-if="item.status === 'RE-TE'" class="inline-block bg-orange-50 text-orange-700 border border-orange-200 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">RE-TE</span>
-                                <span v-else-if="item.status === 'PO'" class="inline-block bg-pink-50 text-pink-700 border border-pink-200 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">PO</span>
+                    <tbody class="divide-y divide-slate-200 text-slate-900 text-base">
+                        <tr v-for="item in filteredProcurements" :key="item.id" class="hover:bg-slate-50/50 transition whitespace-nowrap">
+                            <td class="p-4 text-center font-mono text-base">{{ item.no }}</td>
+                            <td class="p-4 text-center font-mono font-semibold text-slate-900 select-all text-base">{{ item.rp_number }}</td>
+                            <td class="p-4 font-medium text-base whitespace-normal min-w-[320px]">{{ item.description }}</td>
+                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.date_created || '—' }}</td>
+                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.send_for_approval_general_director || '—' }}</td>
+                            <td class="p-4 text-center text-base text-slate-500">{{ item.buyer || '—' }}</td>
+                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.te_in || '—' }}</td>
+                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.te_out || '—' }}</td>
+                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.re_te || '—' }}</td>
+                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.po || '—' }}</td>
+                            <td class="p-4 text-center text-base text-slate-500">{{ item.vendor || '—' }}</td>
+                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.delivery || '—' }}</td>
+                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.so || '—' }}</td>
+                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.qc || '—' }}</td>
+                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.rr || '—' }}</td>
+                            <td class="p-4 text-center text-base">
+                                <span v-if="item.status === 'Disetujui'" class="inline-block bg-green-50 text-green-700 border border-green-200 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">Disetujui</span>
+                                <span v-else-if="item.status === 'Tidak Disetujui'" class="inline-block bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">Tidak Disetujui</span>
+                                <span v-else-if="item.status === 'Pending'" class="inline-block bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">Pending</span>
+                                <span v-else class="inline-block bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">{{ item.status }}</span>
                             </td>
-                            <td class="p-4 text-center font-mono text-xs text-slate-500">{{ item.date_created || '—' }}</td>
-                            <td class="p-4">
+                            <td class="p-4 text-base">
                                 <div class="flex items-center justify-center gap-2">
                                     <!-- Edit Button -->
                                     <button 
@@ -294,7 +365,7 @@ function toggleStatusFilter(status) {
                                     >
                                         <i class="bi bi-pencil-square"></i> Edit
                                     </button>
-
+ 
                                     <!-- Delete Button -->
                                     <button 
                                         @click="confirmDelete(item.id)" 
@@ -306,16 +377,39 @@ function toggleStatusFilter(status) {
                             </td>
                         </tr>
                         <tr v-if="filteredProcurements.length === 0">
-                            <td colspan="6" class="p-8 text-center text-slate-400 font-mono text-sm">
+                            <td colspan="17" class="p-8 text-center text-slate-400 font-mono text-base">
                                 Data pengadaan kosong / tidak ditemukan.
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
+            <!-- Server-Side Pagination Controls -->
+            <div v-if="procurements.links && procurements.links.length > 3" class="px-5 py-4 bg-white border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="text-xs text-slate-500 font-mono">
+                    Menampilkan halaman {{ procurements.current_page }} dari {{ procurements.last_page }} (Total: {{ procurements.total }} data)
+                </div>
+                <div class="flex items-center gap-1 flex-wrap">
+                    <a
+                        v-for="(link, index) in procurements.links"
+                        :key="index"
+                        :href="link.url || '#'"
+                        class="px-3 py-1.5 rounded-lg border text-xs font-semibold font-mono transition duration-150 decoration-none"
+                        :class="[
+                            link.active 
+                                ? 'bg-blue-600 border-blue-600 text-white shadow-sm' 
+                                : link.url 
+                                    ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50' 
+                                    : 'bg-white border-slate-100 text-slate-300 cursor-not-allowed'
+                        ]"
+                        v-html="link.label"
+                    ></a>
+                </div>
+            </div>
         </section>
 
-        <!-- MODAL EDIT (COMPREHENSIVE FOR ALL 15 COLUMNS) -->
+        <!-- MODAL EDIT -->
         <Transition name="fade">
             <div v-if="showEditModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
                 <div class="bg-white rounded-2xl border border-slate-100 w-full max-w-[800px] max-h-[90vh] overflow-hidden shadow-2xl flex flex-col relative">
@@ -334,10 +428,10 @@ function toggleStatusFilter(status) {
 
                         <!-- 2 Column Grid for Form Fields -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Status Dropdown -->
+                            <!-- Phase Dropdown -->
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Status</label>
-                                <select v-model="editForm.status" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm">
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Fase (Phase)</label>
+                                <select v-model="editForm.phase" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white">
                                     <option value="RP">Request Purchasing (RP)</option>
                                     <option value="TE">Technical Evaluation (TE)</option>
                                     <option value="RE-TE">Re-Technical Evaluation (RE-TE)</option>
@@ -345,94 +439,108 @@ function toggleStatusFilter(status) {
                                 </select>
                             </div>
 
+                            <!-- Status Dropdown -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Status Persetujuan</label>
+                                <select v-model="editForm.status" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white">
+                                    <option value="Pending">Pending</option>
+                                    <option value="Disetujui">Disetujui</option>
+                                    <option value="Tidak Disetujui">Tidak Disetujui</option>
+                                    <option value="RP">RP</option>
+                                    <option value="TE">TE</option>
+                                    <option value="RE-TE">RE-TE</option>
+                                    <option value="PO">PO</option>
+                                </select>
+                            </div>
+
                             <!-- No -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">No (Serial)</label>
-                                <input type="text" v-model="editForm.no" required class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                                <input type="text" v-model="editForm.no" required class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- RP Number -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Kode Pengadaan (RP Number)</label>
-                                <input type="text" v-model="editForm.rp_number" required class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-mono" />
+                                <input type="text" v-model="editForm.rp_number" required class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm font-mono bg-white" />
                             </div>
 
                             <!-- Description -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Description</label>
-                                <input type="text" v-model="editForm.description" required class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                                <input type="text" v-model="editForm.description" required class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- Date Created -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Date Created</label>
-                                <input type="text" v-model="editForm.date_created" required class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                                <input type="text" v-model="editForm.date_created" required class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- Send for Approval General Director -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Send Gen Dir Approval</label>
-                                <input type="text" v-model="editForm.send_for_approval_general_director" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                                <input type="text" v-model="editForm.send_for_approval_general_director" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- Buyer -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Buyer (Inisial)</label>
-                                <input type="text" v-model="editForm.buyer" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                                <input type="text" v-model="editForm.buyer" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- TE In -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">TE In Date</label>
-                                <input type="text" v-model="editForm.te_in" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                                <input type="text" v-model="editForm.te_in" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- TE Out -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">TE Out Date</label>
-                                <input type="text" v-model="editForm.te_out" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                                <input type="text" v-model="editForm.te_out" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- RE-TE -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">RE-TE Date</label>
-                                <input type="text" v-model="editForm.re_te" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                                <input type="text" v-model="editForm.re_te" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- PO -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">PO Date/Number</label>
-                                <input type="text" v-model="editForm.po" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                                <input type="text" v-model="editForm.po" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- SO -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">SO Date/Number</label>
-                                <input type="text" v-model="editForm.so" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                                <input type="text" v-model="editForm.so" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- QC -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">QC Date/Result</label>
-                                <input type="text" v-model="editForm.qc" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                                <input type="text" v-model="editForm.qc" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- Delivery -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Delivery Date</label>
-                                <input type="text" v-model="editForm.delivery" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                                <input type="text" v-model="editForm.delivery" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- RR -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">RR Date</label>
-                                <input type="text" v-model="editForm.rr" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                                <input type="text" v-model="editForm.rr" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- Vendor -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Vendor Name</label>
-                                <input type="text" v-model="editForm.vendor" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                                <input type="text" v-model="editForm.vendor" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
                         </div>
 
