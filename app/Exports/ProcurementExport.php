@@ -13,12 +13,28 @@ use Illuminate\Support\Enumerable;
 
 class ProcurementExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
 {
+    protected $monthYear;
+    protected $phase;
+
+    public function __construct($monthYear = null, $phase = null)
+    {
+        $this->monthYear = $monthYear;
+        $this->phase = $phase;
+    }
+
     /**
      * Query all procurement data ordered by latest.
      */
     public function collection(): Enumerable
     {
-        return Procurement::orderBy('id', 'desc')->get();
+        $query = Procurement::orderBy('tanggal_masuk', 'asc');
+        if ($this->monthYear) {
+            $query->whereRaw("DATE_FORMAT(tanggal_masuk, '%Y-%m') = ?", [$this->monthYear]);
+        }
+        if ($this->phase) {
+            $query->where('phase', $this->phase);
+        }
+        return $query->get();
     }
 
     /**
@@ -42,6 +58,7 @@ class ProcurementExport implements FromCollection, WithHeadings, WithMapping, Sh
             'Delivery',
             'RR',
             'Vendor',
+            'Status',
         ];
     }
 
@@ -66,6 +83,7 @@ class ProcurementExport implements FromCollection, WithHeadings, WithMapping, Sh
             $procurement->delivery,
             $procurement->rr,
             $procurement->vendor,
+            $procurement->status,
         ];
     }
 

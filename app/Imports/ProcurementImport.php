@@ -130,15 +130,23 @@ class ProcurementImport implements
             $so = Date::excelToDateTimeObject($so)->format('Y-m-d');
         }
 
-        // Compute status based on fields presence
+        // Compute phase based on fields presence
         if ($po || $so || $delivery || $rr) {
-            $status = 'PO';
+            $phase = 'PO';
         } elseif ($reTe) {
-            $status = 'RE-TE';
+            $phase = 'RE-TE';
         } elseif ($teIn || $teOut) {
-            $status = 'TE';
+            $phase = 'TE';
         } else {
-            $status = 'RP';
+            $phase = 'RP';
+        }
+
+        $tanggalMasuk = null;
+        if ($dateCreated) {
+            $parsed = Procurement::parseDateString($dateCreated);
+            if ($parsed) {
+                $tanggalMasuk = $parsed->format('Y-m-d');
+            }
         }
 
         return new Procurement([
@@ -157,7 +165,9 @@ class ProcurementImport implements
             'so'                                 => $so,
             'qc'                                 => $row['qc'] ?: null,
             'rr'                                 => $rr,
-            'status'                             => $status,
+            'status'                             => 'Pending',
+            'phase'                              => $phase,
+            'tanggal_masuk'                      => $tanggalMasuk,
         ]);
     }
 
