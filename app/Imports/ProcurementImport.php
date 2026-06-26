@@ -86,49 +86,14 @@ class ProcurementImport implements
         $this->chunkRowCount++;
 
         $dateCreated = $row['date_created'] ?: null;
-        if (is_numeric($dateCreated)) {
-            $dateCreated = Date::excelToDateTimeObject($dateCreated)->format('Y-m-d');
-        }
-
         $teIn = $row['te_in'] ?: null;
-        if (is_numeric($teIn)) {
-            $teIn = Date::excelToDateTimeObject($teIn)->format('Y-m-d');
-        }
-
         $teOut = $row['te_out'] ?: null;
-        if (is_numeric($teOut)) {
-            $teOut = Date::excelToDateTimeObject($teOut)->format('Y-m-d');
-        }
-
         $sendGen = $row['send_for_approval_general_director'] ?: null;
-        if (is_numeric($sendGen)) {
-            $sendGen = Date::excelToDateTimeObject($sendGen)->format('Y-m-d');
-        }
-
         $reTe = $row['re_te'] ?: null;
-        if (is_numeric($reTe)) {
-            $reTe = Date::excelToDateTimeObject($reTe)->format('Y-m-d');
-        }
-
         $po = $row['po'] ?: null;
-        if (is_numeric($po)) {
-            $po = Date::excelToDateTimeObject($po)->format('Y-m-d');
-        }
-
         $delivery = $row['delivery'] ?: null;
-        if (is_numeric($delivery)) {
-            $delivery = Date::excelToDateTimeObject($delivery)->format('Y-m-d');
-        }
-
         $rr = $row['rr'] ?: null;
-        if (is_numeric($rr)) {
-            $rr = Date::excelToDateTimeObject($rr)->format('Y-m-d');
-        }
-
         $so = $row['so'] ?: null;
-        if (is_numeric($so)) {
-            $so = Date::excelToDateTimeObject($so)->format('Y-m-d');
-        }
 
         // Compute phase based on fields presence
         if ($po || $so || $delivery || $rr) {

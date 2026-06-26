@@ -47,8 +47,7 @@ Route::middleware(['auth', \App\Http\Middleware\HandleInertiaRequests::class])->
     Route::post('/procurement/store', [ProcurementController::class, 'store'])
         ->name('procurement.store');
 
-    Route::get('/procurement/edit/{id}', [ProcurementController::class, 'edit'])
-        ->name('procurement.edit');
+
 
     Route::put('/procurement/update/{id}', [ProcurementController::class, 'update'])
         ->name('procurement.update');

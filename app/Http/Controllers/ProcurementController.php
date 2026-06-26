@@ -335,12 +335,12 @@ class ProcurementController extends Controller
             'phase'                              => 'required|in:RP,TE,RE-TE,PO',
             'send_for_approval_general_director' => 'nullable|string|max:255',
             'buyer'                              => 'nullable|string|max:255',
-            'te_in'                              => 'nullable|string|max:255',
-            'te_out'                             => 'nullable|string|max:255',
-            're_te'                              => 'nullable|string|max:255',
+            'te_in'                              => 'nullable|date',
+            'te_out'                             => 'nullable|date',
+            're_te'                              => 'nullable|date',
             'po'                                 => 'nullable|string|max:255',
             'vendor'                             => 'nullable|string|max:255',
-            'delivery'                           => 'nullable|string|max:255',
+            'delivery'                           => 'nullable|date',
             'so'                                 => 'nullable|string|max:255',
             'qc'                                 => 'nullable|string|max:255',
             'rr'                                 => 'nullable|string|max:255',
@@ -380,12 +380,12 @@ class ProcurementController extends Controller
             'phase'                              => 'required|in:RP,TE,RE-TE,PO',
             'send_for_approval_general_director' => 'nullable|string|max:255',
             'buyer'                              => 'nullable|string|max:255',
-            'te_in'                              => 'nullable|string|max:255',
-            'te_out'                             => 'nullable|string|max:255',
-            're_te'                              => 'nullable|string|max:255',
+            'te_in'                              => 'nullable|date',
+            'te_out'                             => 'nullable|date',
+            're_te'                              => 'nullable|date',
             'po'                                 => 'nullable|string|max:255',
             'vendor'                             => 'nullable|string|max:255',
-            'delivery'                           => 'nullable|string|max:255',
+            'delivery'                           => 'nullable|date',
             'so'                                 => 'nullable|string|max:255',
             'qc'                                 => 'nullable|string|max:255',
             'rr'                                 => 'nullable|string|max:255',
@@ -430,7 +430,7 @@ class ProcurementController extends Controller
     {
         $procurement = Procurement::findOrFail($id);
         $currentPhase = $procurement->phase;
-        $nowStr = now()->format('l, F j, Y');
+        $nowStr = now()->format('Y-m-d');
 
         if ($currentPhase === Procurement::PHASE_RP) {
             $procurement->phase = Procurement::PHASE_TE;
