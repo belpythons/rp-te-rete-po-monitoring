@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { useForm, router } from '@inertiajs/vue3';
+import { useForm, router, Link } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
 const props = defineProps({
@@ -138,15 +138,26 @@ function submitDelete() {
             </div>
         </section>
 
+        <!-- Standalone Primary Action Row (Outside and above the table container) -->
+        <div class="flex justify-end mb-4">
+            <Link
+                href="/procurement/create"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg shadow-sm transition decoration-none"
+            >
+                <i class="bi bi-plus-lg"></i> Tambah Pengadaan
+            </Link>
+        </div>
+
         <!-- Solid Neutral Table Wrapper Container -->
-        <section class="bg-white border-2 border-black shadow-md overflow-hidden mb-8">
-            <div class="p-6 border-b-2 border-black flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 bg-slate-50">
+        <section class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+            <div class="p-6 border-b border-slate-100 flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 bg-slate-50">
                 <div class="flex items-center gap-2">
                     <div class="w-3 h-6 bg-slate-800 rounded-full"></div>
                     <h3 class="text-lg font-bold text-slate-900">Data Monitoring Purchase Order</h3>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+
                     <!-- Export buttons for current phase -->
                     <div class="flex items-center gap-2">
                         <a 
@@ -205,64 +216,65 @@ function submitDelete() {
                 </div>
             </div>
 
-            <!-- Data Table with base font size -->
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
+            <!-- Data Table with compact text-xs size -->
+            <!-- Data Table wrapper with overflow-x-auto -->
+            <div class="overflow-x-auto w-full">
+                <table class="w-full text-left border-collapse min-w-[1600px]">
                     <thead>
-                        <tr class="bg-slate-800 text-white border-b-2 border-black whitespace-nowrap">
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-16">No</th>
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-40">Kode (RP)</th>
-                            <th class="p-4 text-base font-bold uppercase tracking-wider min-w-[320px]">Deskripsi Barang</th>
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">Date Created</th>
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">Send Gen Dir</th>
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-28">Buyer</th>
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">TE In</th>
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">TE Out</th>
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">Re-TE</th>
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">PO</th>
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-48">Vendor</th>
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">Delivery</th>
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">SO</th>
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">QC</th>
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">RR</th>
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-36">Status</th>
-                            <th class="p-4 text-center text-base font-bold uppercase tracking-wider w-44">Aksi</th>
+                        <tr class="bg-slate-800 text-white">
+                            <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider font-sans">No</th>
+                            <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider font-sans">Kode (RP)</th>
+                            <th class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider font-sans" style="min-width: 320px">Deskripsi Barang</th>
+                            <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider font-sans">Date Created</th>
+                            <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider font-sans">Send Gen Dir</th>
+                            <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider font-sans">Buyer</th>
+                            <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider font-sans">TE In</th>
+                            <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider font-sans">TE Out</th>
+                            <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider font-sans">Re-TE</th>
+                            <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider font-sans">PO</th>
+                            <th class="py-3 px-4 text-left text-xs font-semibold uppercase tracking-wider font-sans" style="min-width: 200px">Vendor</th>
+                            <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider font-sans">Delivery</th>
+                            <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider font-sans">SO</th>
+                            <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider font-sans">QC</th>
+                            <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider font-sans">RR</th>
+                            <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider font-sans">Status</th>
+                            <th class="py-3 px-4 text-center text-xs font-semibold uppercase tracking-wider font-sans">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-200 text-slate-900 text-base">
-                        <tr v-for="item in filteredProcurements" :key="item.id" class="hover:bg-slate-50/50 transition whitespace-nowrap">
-                            <td class="p-4 text-center font-mono text-base">{{ item.no }}</td>
-                            <td class="p-4 text-center font-mono font-semibold text-slate-900 select-all text-base">{{ item.rp_number }}</td>
-                            <td class="p-4 font-medium text-base whitespace-normal min-w-[320px]">{{ item.description }}</td>
-                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.date_created || '—' }}</td>
-                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.send_for_approval_general_director || '—' }}</td>
-                            <td class="p-4 text-center text-base text-slate-500">{{ item.buyer || '—' }}</td>
-                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.te_in || '—' }}</td>
-                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.te_out || '—' }}</td>
-                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.re_te || '—' }}</td>
-                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.po || '—' }}</td>
-                            <td class="p-4 text-center text-base text-slate-500">{{ item.vendor || '—' }}</td>
-                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.delivery || '—' }}</td>
-                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.so || '—' }}</td>
-                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.qc || '—' }}</td>
-                            <td class="p-4 text-center font-mono text-base text-slate-500">{{ item.rr || '—' }}</td>
-                            <td class="p-4 text-center text-base">
+                    <tbody class="divide-y divide-slate-200 text-slate-900 text-xs">
+                        <tr v-for="item in filteredProcurements" :key="item.id" class="hover:bg-slate-50/50 transition">
+                            <td class="py-3 px-4 text-center font-mono text-xs">{{ item.no }}</td>
+                            <td class="py-3 px-4 text-center font-mono font-semibold text-slate-900 select-all text-xs">{{ item.rp_number }}</td>
+                            <td class="py-3 px-4 text-left font-medium text-xs whitespace-normal" :title="item.description">{{ item.description }}</td>
+                            <td class="py-3 px-4 text-center font-mono text-xs text-slate-500">{{ item.date_created || '—' }}</td>
+                            <td class="py-3 px-4 text-center font-mono text-xs text-slate-500">{{ item.send_for_approval_general_director || '—' }}</td>
+                            <td class="py-3 px-4 text-center text-xs text-slate-500">{{ item.buyer || '—' }}</td>
+                            <td class="py-3 px-4 text-center font-mono text-xs text-slate-500">{{ item.te_in || '—' }}</td>
+                            <td class="py-3 px-4 text-center font-mono text-xs text-slate-500">{{ item.te_out || '—' }}</td>
+                            <td class="py-3 px-4 text-center font-mono text-xs text-slate-500">{{ item.re_te || '—' }}</td>
+                            <td class="py-3 px-4 text-center font-mono text-xs text-slate-500">{{ item.po || '—' }}</td>
+                            <td class="py-3 px-4 text-left text-xs text-slate-500 whitespace-normal" :title="item.vendor">{{ item.vendor || '—' }}</td>
+                            <td class="py-3 px-4 text-center font-mono text-xs text-slate-500">{{ item.delivery || '—' }}</td>
+                            <td class="py-3 px-4 text-center font-mono text-xs text-slate-500">{{ item.so || '—' }}</td>
+                            <td class="py-3 px-4 text-center font-mono text-xs text-slate-500">{{ item.qc || '—' }}</td>
+                            <td class="py-3 px-4 text-center font-mono text-xs text-slate-500">{{ item.rr || '—' }}</td>
+                            <td class="py-3 px-4 text-center text-xs">
                                 <span v-if="item.status === 'Disetujui'" class="inline-block bg-green-50 text-green-700 border border-green-200 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">Disetujui</span>
                                 <span v-else-if="item.status === 'Tidak Disetujui'" class="inline-block bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">Tidak Disetujui</span>
                                 <span v-else-if="item.status === 'Pending'" class="inline-block bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">Pending</span>
                                 <span v-else class="inline-block bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">{{ item.status }}</span>
                             </td>
-                            <td class="p-4 text-base">
+                            <td class="py-3 px-4 text-center text-xs">
                                 <div class="flex items-center justify-center gap-2">
                                     <button 
                                         @click="openEditModal(item)" 
-                                        class="h-8 px-3 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-semibold text-xs rounded-lg transition flex items-center gap-1 cursor-pointer"
+                                        class="h-8 px-3 py-1 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-semibold text-xs rounded-lg transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                                     >
                                         <i class="bi bi-pencil-square"></i> Edit
                                     </button>
                                     <button 
                                         @click="confirmDelete(item.id)" 
-                                        class="h-8 px-3 bg-red-500 hover:bg-red-600 text-white font-semibold text-xs rounded-lg transition flex items-center gap-1 cursor-pointer"
+                                        class="h-8 px-3 py-1 bg-red-500 hover:bg-red-600 text-white font-semibold text-xs rounded-lg transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
                                     >
                                         <i class="bi bi-trash"></i> Hapus
                                     </button>
@@ -270,7 +282,7 @@ function submitDelete() {
                             </td>
                         </tr>
                         <tr v-if="filteredProcurements.length === 0">
-                            <td colspan="17" class="p-8 text-center text-slate-400 font-mono text-base">
+                            <td colspan="17" class="p-8 text-center text-slate-400 font-mono text-xs">
                                 Data pengadaan kosong / tidak ditemukan.
                             </td>
                         </tr>
@@ -284,7 +296,7 @@ function submitDelete() {
                     Menampilkan halaman {{ procurements.current_page }} dari {{ procurements.last_page }} (Total: {{ procurements.total }} data)
                 </div>
                 <div class="flex items-center gap-1 flex-wrap">
-                    <a
+                    <Link
                         v-for="(link, index) in procurements.links"
                         :key="index"
                         :href="link.url || '#'"
@@ -297,7 +309,7 @@ function submitDelete() {
                                     : 'bg-white border-slate-100 text-slate-300 cursor-not-allowed'
                         ]"
                         v-html="link.label"
-                    ></a>
+                    ></Link>
                 </div>
             </div>
         </section>
@@ -365,13 +377,13 @@ function submitDelete() {
                             <!-- Date Created -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Date Created</label>
-                                <input type="text" v-model="editForm.date_created" required class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
+                                <input type="date" v-model="editForm.date_created" required class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- Send for Approval General Director -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Send Gen Dir Approval</label>
-                                <input type="text" v-model="editForm.send_for_approval_general_director" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
+                                <input type="date" v-model="editForm.send_for_approval_general_director" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- Buyer -->
@@ -401,7 +413,7 @@ function submitDelete() {
                             <!-- Delivery -->
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Delivery Date</label>
-                                <input type="text" v-model="editForm.delivery" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
+                                <input type="date" v-model="editForm.delivery" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm bg-white" />
                             </div>
 
                             <!-- RR -->

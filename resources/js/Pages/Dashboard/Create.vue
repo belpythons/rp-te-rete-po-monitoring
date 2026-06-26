@@ -1,5 +1,5 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3';
+import { useForm, Link } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
 const form = useForm({
@@ -7,7 +7,7 @@ const form = useForm({
     no: '',
     rp_number: '',
     description: '',
-    date_created: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+    date_created: new Date().toISOString().split('T')[0],
     send_for_approval_general_director: '',
     buyer: '',
     te_in: '',
@@ -78,13 +78,13 @@ function submit() {
                     <!-- Date Created -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Date Created</label>
-                        <input type="text" v-model="form.date_created" required class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                        <input type="date" v-model="form.date_created" required class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
                     </div>
 
                     <!-- Send for Approval General Director -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Send Gen Dir Approval</label>
-                        <input type="text" v-model="form.send_for_approval_general_director" placeholder="Tanggal send approval" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                        <input type="date" v-model="form.send_for_approval_general_director" placeholder="Tanggal send approval" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
                     </div>
 
                     <!-- Buyer -->
@@ -96,19 +96,19 @@ function submit() {
                     <!-- TE In -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase mb-1">TE In Date</label>
-                        <input type="text" v-model="form.te_in" placeholder="Tanggal TE In" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                        <input type="date" v-model="form.te_in" placeholder="Tanggal TE In" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
                     </div>
 
                     <!-- TE Out -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase mb-1">TE Out Date</label>
-                        <input type="text" v-model="form.te_out" placeholder="Tanggal TE Out" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                        <input type="date" v-model="form.te_out" placeholder="Tanggal TE Out" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
                     </div>
 
                     <!-- RE-TE -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase mb-1">RE-TE Date</label>
-                        <input type="text" v-model="form.re_te" placeholder="Tanggal RE-TE" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                        <input type="date" v-model="form.re_te" placeholder="Tanggal RE-TE" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
                     </div>
 
                     <!-- PO -->
@@ -132,7 +132,7 @@ function submit() {
                     <!-- Delivery -->
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Delivery Date</label>
-                        <input type="text" v-model="form.delivery" placeholder="Tanggal Delivery" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
+                        <input type="date" v-model="form.delivery" placeholder="Tanggal Delivery" class="w-full h-10 px-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm" />
                     </div>
 
                     <!-- RR -->
@@ -159,13 +159,13 @@ function submit() {
                         {{ form.processing ? 'Menyimpan...' : 'Simpan Data' }}
                     </button>
 
-                    <a 
+                    <Link 
                         href="/dashboard" 
                         class="w-full sm:w-32 h-11 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg flex items-center justify-center gap-2 transition cursor-pointer decoration-none text-sm"
                     >
                         <i class="bi bi-arrow-left"></i>
                         Kembali
-                    </a>
+                    </Link>
                 </div>
             </form>
         </div>
