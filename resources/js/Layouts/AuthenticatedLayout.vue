@@ -76,12 +76,10 @@ watch(
 </script>
 
 <template>
-    <div class="min-h-screen text-slate-800 font-sans antialiased flex flex-col md:flex-row relative">
-        <!-- Main Background Image -->
-        <div 
-            class="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
-            style="background-image: url('/images/kmi1.jpg');"
-        ></div>
+    <div 
+        class="min-h-screen text-slate-800 font-sans antialiased flex flex-col md:flex-row relative layout-container"
+        style="background-image: url('/images/image_d04ce0.jpg');"
+    >
 
         <!-- ═══════════════════════════════════════════ -->
         <!-- SIDEBAR - Slate-800 background             -->
@@ -137,7 +135,7 @@ watch(
         <!-- ═══════════════════════════════════════════ -->
         <!-- MAIN CONTENT AREA                          -->
         <!-- ═══════════════════════════════════════════ -->
-        <div class="flex-grow md:ml-72 p-6 md:p-8 flex flex-col min-h-screen z-20 relative">
+        <div class="flex-grow md:ml-72 p-6 md:p-8 flex flex-col min-h-screen z-20 relative min-w-0 overflow-x-hidden">
             <!-- Topbar Header -->
             <header class="mb-8">
                 <h1 class="text-3xl font-bold text-slate-900 drop-shadow-sm">
@@ -190,6 +188,13 @@ watch(
 </template>
 
 <style scoped>
+.layout-container {
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
 /* TOAST TRANSITION */
 .toast-slide-enter-active,
 .toast-slide-leave-active {
