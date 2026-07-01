@@ -29,7 +29,8 @@ class ReportController extends Controller
 
         $procurements = $query->paginate(15)->withQueryString();
 
-        $importLogs = ImportLog::where('user_id', auth()->id())
+        $importLogs = ImportLog::with('user')
+            ->where('user_id', auth()->id())
             ->orderBy('id', 'desc')
             ->take(10)
             ->get()

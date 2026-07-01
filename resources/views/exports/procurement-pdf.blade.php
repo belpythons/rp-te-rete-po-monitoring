@@ -46,6 +46,9 @@
             table-layout: fixed;
             margin-top: 10px;
         }
+        tr {
+            page-break-inside: avoid;
+        }
         th {
             background-color: #0F172A;
             color: #ffffff;
