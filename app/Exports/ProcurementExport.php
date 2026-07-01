@@ -3,15 +3,16 @@
 namespace App\Exports;
 
 use App\Models\Procurement;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use Illuminate\Support\Enumerable;
 
-class ProcurementExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
+class ProcurementExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, ShouldQueue, WithChunkReading
 {
     protected $monthYear;
     protected $phase;
@@ -25,16 +26,32 @@ class ProcurementExport implements FromCollection, WithHeadings, WithMapping, Sh
     /**
      * Query all procurement data ordered by latest.
      */
-    public function collection(): Enumerable
+    public function query(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation|\Illuminate\Database\Query\Builder
     {
-        $query = Procurement::orderBy('tanggal_masuk', 'asc');
+        $query = Procurement::query()->orderBy('tanggal_masuk', 'asc');
         if ($this->monthYear) {
             $query->whereRaw("DATE_FORMAT(tanggal_masuk, '%Y-%m') = ?", [$this->monthYear]);
         }
         if ($this->phase) {
             $query->where('phase', $this->phase);
         }
-        return $query->get();
+        return $query;
+    }
+
+    /**
+     * Helper method for test suite compatibility.
+     */
+    public function collection()
+    {
+        return $this->query()->get();
+    }
+
+    /**
+     * Chunk size.
+     */
+    public function chunkSize(): int
+    {
+        return 1000;
     }
 
     /**
