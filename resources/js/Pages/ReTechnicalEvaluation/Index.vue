@@ -105,6 +105,7 @@ function submitUpdate() {
 // Delete Modal state
 const showDeleteModal = ref(false);
 const deleteId = ref(null);
+const deleteForm = useForm({});
 
 function confirmDelete(id) {
     deleteId.value = id;
@@ -113,7 +114,7 @@ function confirmDelete(id) {
 
 function submitDelete() {
     if (!deleteId.value) return;
-    router.post(`/procurement/delete/${deleteId.value}`, {}, {
+    deleteForm.post(`/procurement/delete/${deleteId.value}`, {
         onSuccess: () => {
             showDeleteModal.value = false;
             deleteId.value = null;
@@ -444,9 +445,10 @@ function submitDelete() {
                         </button>
                         <button 
                             @click="submitDelete" 
-                            class="h-10 px-5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs transition shadow-md cursor-pointer"
+                            :disabled="deleteForm.processing"
+                            class="h-10 px-5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-xs transition shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Hapus
+                            {{ deleteForm.processing ? 'Menghapus...' : 'Hapus' }}
                         </button>
                     </div>
                 </div>

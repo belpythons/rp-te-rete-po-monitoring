@@ -19,3 +19,7 @@ Broadcast::channel('import.{importLogId}', function ($user, $importLogId) {
     $importLog = \App\Models\ImportLog::find($importLogId);
     return $importLog && $importLog->user_id === $user->id;
 });
+
+Broadcast::channel('activities', function ($user) {
+    return auth()->check();
+});
