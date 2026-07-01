@@ -1,6 +1,6 @@
 <script setup>
 import { usePage } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 
 defineProps({
     title: {
@@ -73,6 +73,26 @@ watch(
     },
     { deep: true, immediate: true }
 );
+
+onMounted(() => {
+    if (window.Echo) {
+        window.Echo.private('activities')
+            .listen('.activity.logged', (e) => {
+                toastMessage.value = e.message;
+                toastType.value = 'success';
+                showToast.value = true;
+                setTimeout(() => {
+                    showToast.value = false;
+                }, 5000);
+            });
+    }
+});
+
+onUnmounted(() => {
+    if (window.Echo) {
+        window.Echo.leave('activities');
+    }
+});
 </script>
 
 <template>
@@ -91,7 +111,7 @@ watch(
                     <img 
                         src="/images/kmi-logo.png" 
                         alt="KMI Logo" 
-                        class="h-16 w-auto mb-3 object-contain bg-white/10 p-1.5 rounded-lg"
+                        class="h-16 w-auto mb-3 object-contain"
                     />
                     <div class="text-xs font-mono text-slate-400 tracking-widest uppercase">PT. KMI</div>
                     <div class="text-sm font-semibold text-slate-200 tracking-wide mt-1">Kaltim Methanol Industri</div>

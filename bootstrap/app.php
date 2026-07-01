@@ -15,5 +15,14 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
+            return redirect()->to('/login')->with('error', 'Sesi Anda telah kedaluwarsa. Silakan login kembali.');
+        });
+
+        $exceptions->respond(function ($response, \Throwable $e, \Illuminate\Http\Request $request) {
+            if ($response->getStatusCode() === 419) {
+                return redirect()->to('/login')->with('error', 'Sesi Anda telah kedaluwarsa. Silakan login kembali.');
+            }
+            return $response;
+        });
     })->create();

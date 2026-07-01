@@ -6,11 +6,12 @@ use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
-class FailedRowsExport implements FromArray, WithHeadings, ShouldAutoSize, WithStyles
+class FailedRowsExport implements FromArray, WithHeadings, ShouldAutoSize, WithStyles, ShouldQueue
 {
     private array $failures;
 

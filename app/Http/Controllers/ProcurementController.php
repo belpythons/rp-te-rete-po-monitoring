@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Procurement;
 use Inertia\Inertia;
+use App\Events\ActivityLogged;
 
 class ProcurementController extends Controller
 {
@@ -356,7 +357,8 @@ class ProcurementController extends Controller
             }
         }
 
-        Procurement::create($data);
+        $procurement = Procurement::create($data);
+        event(new ActivityLogged("Data pengadaan baru dengan kode {$procurement->rp_number} berhasil dibuat."));
 
         return redirect()->to('/dashboard')
             ->with('success', 'Data procurement berhasil ditambahkan!');
@@ -402,6 +404,7 @@ class ProcurementController extends Controller
         }
 
         $procurement->update($data);
+        event(new ActivityLogged("Data pengadaan dengan kode {$procurement->rp_number} berhasil diperbarui."));
 
         return redirect()->to('/dashboard')
             ->with('success', 'Data procurement berhasil diperbarui!');
@@ -415,7 +418,9 @@ class ProcurementController extends Controller
     public function destroy($id)
     {
         $procurement = Procurement::findOrFail($id);
+        $rpNumber = $procurement->rp_number;
         $procurement->delete();
+        event(new ActivityLogged("Data pengadaan dengan kode {$rpNumber} telah dihapus dari sistem."));
 
         return redirect()->to('/dashboard')
             ->with('success', 'Data procurement berhasil dihapus!');
@@ -458,6 +463,7 @@ class ProcurementController extends Controller
         }
 
         $procurement->save();
+        event(new ActivityLogged("Fase pengadaan {$procurement->rp_number} disetujui ke fase {$procurement->phase}."));
 
         return redirect()->back()
             ->with('success', 'Fase berhasil disetujui (Approved)!');
@@ -482,6 +488,7 @@ class ProcurementController extends Controller
         }
 
         $procurement->save();
+        event(new ActivityLogged("Fase pengadaan {$procurement->rp_number} ditolak kembali ke fase {$procurement->phase}."));
 
         return redirect()->back()
             ->with('success', 'Fase berhasil ditolak (Rejected)!');
